@@ -67,7 +67,8 @@ export const analytics = {
       event_label: 'email_capture_completed',
       // Don't send actual email for privacy
       user_properties: {
-        has_email: true
+        has_email: true,
+        email
       }
     })
   },
@@ -78,7 +79,8 @@ export const analytics = {
       event_category: 'conversion',
       event_label: 'magic_link_email_sent',
       user_properties: {
-        has_email: true
+        has_email: true,
+        email
       }
     })
   },

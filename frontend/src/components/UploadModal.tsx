@@ -1,7 +1,7 @@
 import { useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "./ui/button"
-import { X, Upload, FileText, Check, Mail, Link, AlertCircle, CheckCircle, Plus, Trash2 } from "lucide-react"
+import { X, Upload, FileText, Check, Mail, AlertCircle, CheckCircle, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { analytics } from "../lib/analytics"
 
