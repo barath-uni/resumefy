@@ -39,8 +39,8 @@
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
   }
 
   html {
@@ -57,6 +57,39 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-weight: 600;
+  }
+
+  /* Fix WebKit compositing layer text rendering - NUCLEAR OPTION */
+  .force-dark-text {
+    color: #000000 !important;
+    opacity: 1 !important;
+    -webkit-font-smoothing: subpixel-antialiased !important;
+    -moz-osx-font-smoothing: auto !important;
+    backface-visibility: hidden !important;
+    transform: perspective(1px) translateZ(0) !important;
+    will-change: auto !important;
+  }
+
+  .force-gray-text {
+    color: #1f2937 !important;
+    opacity: 1 !important;
+    -webkit-font-smoothing: subpixel-antialiased !important;
+    -moz-osx-font-smoothing: auto !important;
+    backface-visibility: hidden !important;
+    transform: perspective(1px) translateZ(0) !important;
+    will-change: auto !important;
+  }
+
+  /* Fix for features section compositing layer text issues */
+  .fix-compositing-text {
+    -webkit-font-smoothing: subpixel-antialiased !important;
+    -moz-osx-font-smoothing: auto !important;
+    backface-visibility: hidden;
+  }
+
+  .fix-compositing-text * {
+    -webkit-font-smoothing: subpixel-antialiased !important;
+    -moz-osx-font-smoothing: auto !important;
   }
 }
 

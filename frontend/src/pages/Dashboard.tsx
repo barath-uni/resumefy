@@ -312,7 +312,7 @@ export default function Dashboard() {
       </div>
 
       {/* Navigation - Matching Landing Page */}
-      <nav className="border-b border-gray-100 relative z-10 bg-white/90 backdrop-blur-sm">
+      <nav className="border-b border-gray-100 relative z-10 bg-white/90 backdrop-blur-sm fix-compositing-text">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -561,7 +561,7 @@ export default function Dashboard() {
       </div>
 
       {/* Footer - Matching Landing Page */}
-      <footer className="border-t border-gray-100 py-12 bg-gray-50 relative z-10">
+      <footer className="border-t border-gray-100 py-12 bg-gray-50 relative z-10 fix-compositing-text">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
@@ -570,12 +570,12 @@ export default function Dashboard() {
                 alt="Resumefy Logo"
                 className="w-8 h-8"
               />
-              <div className="text-lg font-heading font-semibold text-gray-900">Resumefy</div>
+              <div className="text-lg font-heading font-semibold text-gray-900 force-dark-text">Resumefy</div>
             </div>
             <div className="flex items-center space-x-8 text-sm text-gray-700">
-              <a href="#" className="hover:text-gray-900 transition-colors font-medium">Privacy</a>
-              <a href="#" className="hover:text-gray-900 transition-colors font-medium">Terms</a>
-              <a href="#" className="hover:text-gray-900 transition-colors font-medium">Support</a>
+              <a href="#" className="hover:text-gray-900 transition-colors font-medium force-gray-text">Privacy</a>
+              <a href="#" className="hover:text-gray-900 transition-colors font-medium force-gray-text">Terms</a>
+              <a href="#" className="hover:text-gray-900 transition-colors font-medium force-gray-text">Support</a>
             </div>
           </div>
         </div>

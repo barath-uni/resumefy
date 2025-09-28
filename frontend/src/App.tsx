@@ -73,7 +73,7 @@ function App() {
       {/* Clean Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-50/30 to-white" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50/10 to-white" />
 
         {/* Geometric shapes inspired by the screenshots */}
         <div className="absolute top-20 right-20 w-64 h-64 bg-blue-50 rounded-3xl rotate-12 opacity-60" />
@@ -89,7 +89,7 @@ function App() {
       </div>
 
       {/* Clean Navigation */}
-      <nav className="border-b border-gray-100 relative z-10 bg-white/90 backdrop-blur-sm">
+      <nav className="border-b border-gray-100 relative z-10 bg-white backdrop-blur-sm fix-compositing-text">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
@@ -304,14 +304,14 @@ function App() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-gray-50" id="features">
+      <section className="py-24 bg-gray-50 fix-compositing-text" id="features">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-6">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-6 force-dark-text">
               From hours of frustration to
               <span className="text-emerald-600"> instant optimization</span>
             </h2>
-            <p className="text-xl text-gray-900 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-gray-900 max-w-2xl mx-auto leading-relaxed force-gray-text">
               Skip the guesswork. Get role-fit scores, readability analysis, and ATS-optimized resumes that actually get past the bots.
             </p>
           </div>
@@ -358,11 +358,11 @@ function App() {
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-gray-500 uppercase tracking-wide">Success Rate</div>
-                      <div className="text-sm font-bold text-gray-900">{feature.stats}</div>
+                      <div className="text-sm font-bold text-black">{feature.stats}</div>
                     </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-4 text-gray-900 group-hover:text-emerald-600 transition-colors">{feature.title}</h3>
-                  <p className="text-gray-700 leading-relaxed">{feature.desc}</p>
+                  <h3 className="text-xl font-semibold mb-4 text-black group-hover:text-emerald-600 transition-colors">{feature.title}</h3>
+                  <p className="text-gray-800 leading-relaxed">{feature.desc}</p>
 
                   {/* Hover indicator */}
                   <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -542,7 +542,7 @@ function App() {
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
                 <div className="text-2xl font-bold text-white mb-1">94%</div>
-                <div className="text-gray-300 text-sm">User satisfaction rate</div>
+                <div className="text-gray-300 text-sm">Role fit accuracy</div>
               </div>
             </div>
           </div>
@@ -550,7 +550,7 @@ function App() {
       </section>
 
       {/* Minimal Footer */}
-      <footer className="border-t border-gray-100 py-12 bg-gray-50">
+      <footer className="border-t border-gray-100 py-12 bg-gray-50 fix-compositing-text">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
@@ -559,12 +559,12 @@ function App() {
                 alt="Resumefy Logo"
                 className="w-8 h-8"
               />
-              <div className="text-lg font-heading font-semibold text-gray-900">Resumefy</div>
+              <div className="text-lg font-heading font-semibold text-gray-900 force-dark-text">Resumefy</div>
             </div>
             <div className="flex items-center space-x-8 text-sm text-gray-700">
-              <a href="#" className="hover:text-gray-900 transition-colors font-medium">Privacy</a>
-              <a href="#" className="hover:text-gray-900 transition-colors font-medium">Terms</a>
-              <a href="#" className="hover:text-gray-900 transition-colors font-medium">Support</a>
+              <a href="#" className="hover:text-gray-900 transition-colors font-medium force-gray-text">Privacy</a>
+              <a href="#" className="hover:text-gray-900 transition-colors font-medium force-gray-text">Terms</a>
+              <a href="#" className="hover:text-gray-900 transition-colors font-medium force-gray-text">Support</a>
             </div>
           </div>
         </div>
