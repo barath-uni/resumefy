@@ -1,0 +1,28 @@
+{
+  "name": "Resumefy - One Upload, Multiple Jobs. Instant Role-Optimized Resumes",
+  "short_name": "Resumefy",
+  "description": "Stop spending hours tailoring each resume. Get role-specific optimization, readability scores, and match ratings in minutes — not days.",
+  "theme_color": "#10b981",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["productivity", "business", "utilities"],
+  "lang": "en",
+  "dir": "ltr"
+}

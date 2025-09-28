@@ -97,9 +97,11 @@ function App() {
             className="flex items-center justify-between"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">R</span>
-              </div>
+              <img
+                src="/icons/logo-500.png"
+                alt="Resumefy Logo"
+                className="w-8 h-8"
+              />
               <div className="text-xl font-heading font-semibold text-gray-900">Resumefy</div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
@@ -552,9 +554,11 @@ function App() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">R</span>
-              </div>
+              <img
+                src="/icons/logo-500.png"
+                alt="Resumefy Logo"
+                className="w-8 h-8"
+              />
               <div className="text-lg font-heading font-semibold text-gray-900">Resumefy</div>
             </div>
             <div className="flex items-center space-x-8 text-sm text-gray-700">
