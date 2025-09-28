@@ -1,0 +1,23 @@
+{
+  "name": "resumefy-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:link": "supabase link --project-ref ptiwbbfivfszgrvtgbfz",
+    "supabase:deploy": "supabase db push",
+    "supabase:reset": "supabase db reset",
+    "deploy:prod": "npm run supabase:deploy",
+    "setup": "supabase login && npm run supabase:link"
+  },
+  "dependencies": {
+    "supabase": "^1.200.3"
+  },
+  "devDependencies": {},
+  "keywords": ["resumefy", "supabase", "backend"],
+  "author": "",
+  "license": "ISC",
+  "description": "Resumefy Backend with Supabase"
+}
