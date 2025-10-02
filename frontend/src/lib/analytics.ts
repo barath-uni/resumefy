@@ -122,5 +122,17 @@ export const analytics = {
         file_size_mb: Math.round(fileSize / 1024 / 1024 * 100) / 100,
       }
     })
+  },
+
+  // Payment intent tracking (KEY DEMAND VALIDATION METRIC!)
+  trackPaymentIntent: (intent: string) => {
+    trackEvent('payment_intent_selected', {
+      event_category: 'conversion',
+      event_label: `payment_intent_${intent}`,
+      value: intent === 'yes' ? 10 : intent === 'maybe' ? 5 : 1,
+      custom_parameters: {
+        intent_response: intent,
+      }
+    })
   }
 }

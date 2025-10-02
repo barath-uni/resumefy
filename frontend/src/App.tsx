@@ -132,6 +132,10 @@ function App() {
                   <br />
                   <span className="text-emerald-600">Instant role-optimized Resumes</span>
                 </h1>
+                <div className="text-xl font-semibold text-gray-700 mt-4">
+                  20 free optimizations, after which <span className="line-through text-gray-400">$19.99</span>
+                  <span className="ml-2 text-emerald-600">$14.99/month</span>
+                </div>
               </motion.div>
 
               <motion.p
@@ -159,6 +163,7 @@ function App() {
                   Upload your resume
                   <Upload className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
                 </Button>
+                <p className="text-sm text-gray-600 mt-3">No credit card required</p>
               </motion.div>
 
               {/* Stats */}
