@@ -2,7 +2,7 @@ import { Button } from "../components/ui/button"
 import { Upload } from "lucide-react"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { analytics } from "../lib/analytics"
 
 // Animated Counter Component
@@ -52,9 +52,33 @@ function DynamicResumeCounter() {
 
 interface LandingProps {
   onOpenUploadModal: () => void
+  isAuthenticated?: boolean | null
 }
 
-export default function Landing({ onOpenUploadModal }: LandingProps) {
+export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingProps) {
+  const navigate = useNavigate()
+
+  const handleGetStarted = () => {
+    console.log('🔘 [Landing] Get Started clicked, isAuthenticated:', isAuthenticated)
+    if (isAuthenticated) {
+      console.log('✅ [Landing] User authenticated, redirecting to dashboard')
+      navigate('/dashboard')
+    } else {
+      console.log('📝 [Landing] User not authenticated, opening upload modal')
+      onOpenUploadModal()
+    }
+  }
+
+  const handleSignIn = () => {
+    console.log('🔘 [Landing] Sign In clicked, isAuthenticated:', isAuthenticated)
+    if (isAuthenticated) {
+      console.log('✅ [Landing] User authenticated, redirecting to dashboard')
+      navigate('/dashboard')
+    } else {
+      console.log('📝 [Landing] User not authenticated, opening upload modal')
+      onOpenUploadModal()
+    }
+  }
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       {/* Clean Background */}
@@ -95,7 +119,11 @@ export default function Landing({ onOpenUploadModal }: LandingProps) {
               <a href="#features" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Features</a>
               <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">How it works</a>
               <a href="#pricing" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Pricing</a>
-              <Button variant="outline" className="border border-gray-300 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 px-4 py-2 text-sm font-medium transition-colors">
+              <Button
+                onClick={handleSignIn}
+                variant="outline"
+                className="border border-gray-300 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 px-4 py-2 text-sm font-medium transition-colors"
+              >
                 Sign in
               </Button>
             </div>
@@ -145,7 +173,7 @@ export default function Landing({ onOpenUploadModal }: LandingProps) {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg border-0 shadow-lg hover:shadow-xl transition-all group"
                   onClick={() => {
                     analytics.trackUploadAttempt()
-                    onOpenUploadModal()
+                    handleGetStarted()
                   }}
                 >
                   Upload your resume
@@ -472,7 +500,7 @@ export default function Landing({ onOpenUploadModal }: LandingProps) {
               className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-medium text-lg border-0 shadow-lg hover:shadow-xl transition-all group"
               onClick={() => {
                 analytics.trackUploadAttempt()
-                onOpenUploadModal()
+                handleGetStarted()
               }}
             >
               Start Your Free Analysis

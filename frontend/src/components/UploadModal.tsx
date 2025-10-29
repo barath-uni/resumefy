@@ -4,6 +4,7 @@ import { Button } from "./ui/button"
 import { X, Upload, FileText, Check, Mail, AlertCircle, CheckCircle, Plus, Trash2 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { analytics } from "../lib/analytics"
+import { useNavigate } from "react-router-dom"
 
 interface JobEntry {
   id: string
@@ -15,9 +16,11 @@ interface JobEntry {
 interface UploadModalProps {
   isOpen: boolean
   onClose: () => void
+  isAuthenticated: boolean | null
 }
 
-export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
+export default function UploadModal({ isOpen, onClose, isAuthenticated }: UploadModalProps) {
+  const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [email, setEmail] = useState("")
@@ -29,6 +32,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   }])
   const [paymentIntent, setPaymentIntent] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isExistingUser, setIsExistingUser] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,13 +116,26 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   }
 
   const handleSubmit = async () => {
+    // If user is already authenticated, just redirect to dashboard
+    if (isAuthenticated) {
+      console.log('✅ [UploadModal] User already authenticated, redirecting to dashboard')
+      onClose()
+      navigate('/dashboard')
+      return
+    }
+
     if (!email || !uploadedFile) return
+
+    console.log('🚀 [UploadModal] Starting submission...', { email, fileName: uploadedFile.name })
 
     // Check if at least one job entry has either URL or description
     const hasValidJobEntry = jobEntries.some(job =>
       (job.url && job.urlStatus === 'valid') || job.description.trim()
     )
-    if (!hasValidJobEntry) return
+    if (!hasValidJobEntry) {
+      console.log('❌ [UploadModal] No valid job entries')
+      return
+    }
 
     setIsLoading(true)
 
@@ -131,12 +148,60 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         .filter(job => (job.url && job.urlStatus === 'valid') || job.description.trim())
         .map(job => job.url || job.description.substring(0, 100))
 
-      // 1. Save to email_captures table
+      console.log('📊 [UploadModal] Job positions:', jobPositions)
+
+      // STEP 1: Upload file to Supabase Storage FIRST
+      console.log('📤 [UploadModal] Uploading file to storage...')
+
+      // Create a hash of email for folder name
+      const emailHash = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(email)
+      ).then(buf => Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .substring(0, 16) // Use first 16 chars of hash
+      )
+
+      const timestamp = Date.now()
+      const fileExt = uploadedFile.name.split('.').pop()
+      const filePath = `temp/${emailHash}/${timestamp}.${fileExt}`
+
+      console.log('📁 [UploadModal] File path:', filePath)
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('resume')
+        .upload(filePath, uploadedFile, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('❌ [UploadModal] Upload error:', uploadError)
+        throw new Error(`Failed to upload file: ${uploadError.message}`)
+      }
+
+      console.log('✅ [UploadModal] File uploaded:', uploadData.path)
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('resume')
+        .getPublicUrl(uploadData.path)
+
+      console.log('🔗 [UploadModal] Public URL:', publicUrl)
+
+      // STEP 2: Save to email_captures table with file info
+      console.log('💾 [UploadModal] Saving to email_captures...')
+
       const { data: emailCapture, error: captureError } = await supabase
         .from('email_captures')
         .insert({
           email,
           uploaded_filename: uploadedFile.name,
+          uploaded_file_url: publicUrl,
+          uploaded_file_name: uploadedFile.name,
+          uploaded_file_size: uploadedFile.size,
+          uploaded_at: new Date().toISOString(),
           job_positions: jobPositions,
           upload_timestamp: new Date().toISOString()
         })
@@ -144,14 +209,21 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         .single()
 
       if (captureError) {
+        console.error('❌ [UploadModal] Database error:', captureError)
+        // Clean up uploaded file
+        await supabase.storage.from('resume').remove([uploadData.path])
         throw captureError
       }
 
-      // 2. Generate secure token
+      console.log('✅ [UploadModal] Email capture saved:', emailCapture.id)
+
+      // STEP 3: Generate secure token for magic link tracking
       const token = crypto.randomUUID()
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
 
-      // 3. Save magic link
+      console.log('🔑 [UploadModal] Generated token:', token)
+
+      // STEP 4: Save magic link
       const { error: linkError } = await supabase
         .from('magic_links')
         .insert({
@@ -162,12 +234,21 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         })
 
       if (linkError) {
+        console.error('❌ [UploadModal] Magic link error:', linkError)
         throw linkError
       }
 
-      // 4. Create user account and send signup email
-      const redirectUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/dashboard`
-      const { error: authError } = await supabase.auth.signUp({
+      console.log('✅ [UploadModal] Magic link saved')
+
+      // STEP 5: Check if user already exists
+      console.log('🔍 [UploadModal] Checking if user exists...')
+
+      // Query auth.users to check if email exists (this will work via admin API)
+      // For client-side, we'll try signUp and handle the error
+      const redirectUrl = `${import.meta.env.VITE_APP_URL || 'http://localhost:5173'}/dashboard`
+
+      // Try to sign up - if user exists, this will return an error or success with existing user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: crypto.randomUUID(), // Random password, user will use magic links
         options: {
@@ -182,17 +263,60 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         }
       })
 
+      // Check if user already exists based on the response
+      if (signUpError?.message?.includes('already registered') ||
+          signUpError?.message?.includes('already exists') ||
+          signUpData?.user?.identities?.length === 0) {
+
+        console.log('👤 [UploadModal] User already exists, sending sign-in magic link...')
+        setIsExistingUser(true)
+
+        // Send magic link for existing user
+        const { error: signInError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              app_name: 'Resumefy',
+              file_name: uploadedFile.name,
+              action_text: 'View Your Dashboard',
+              email_capture_id: emailCapture.id,
+              custom_token: token
+            }
+          }
+        })
+
+        if (signInError) {
+          console.error('❌ [UploadModal] Sign-in error:', signInError)
+          throw signInError
+        }
+
+        console.log('✅ [UploadModal] Sign-in magic link sent')
+      } else if (signUpError) {
+        console.error('❌ [UploadModal] Auth error:', signUpError)
+        throw signUpError
+      } else {
+        console.log('✅ [UploadModal] New user signup email sent')
+      }
+
+      const authError = signUpError
+
       if (authError) {
+        console.error('❌ [UploadModal] Auth error:', authError)
         throw authError
       }
+
+      console.log('✅ [UploadModal] Signup email sent!')
 
       // Track magic link sent successfully
       analytics.trackMagicLinkSent(email)
 
-      // Move to confirmation screen (step 3), which will ask payment intent question
+      // Move to confirmation screen (step 3)
       setCurrentStep(3)
+
+      console.log('🎉 [UploadModal] Submission complete!')
     } catch (error: any) {
-      console.error("Error:", error)
+      console.error("❌ [UploadModal] Fatal error:", error)
       alert(`Error: ${error.message || 'Something went wrong. Please try again.'}`)
     } finally {
       setIsLoading(false)
@@ -527,11 +651,18 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
               >
                 <div className="text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-8 h-8 text-blue-600" />
+                    <Mail className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h2 className="text-2xl font-heading font-medium text-gray-900 mb-2">Thanks for uploading!</h2>
-                  <p className="text-gray-600">
-                    We're tailoring your resume. Please confirm your email to view results.
+                  <h2 className="text-2xl font-heading font-medium text-gray-900 mb-2">
+                    {isExistingUser ? 'Welcome back!' : 'Thanks for uploading!'}
+                  </h2>
+                  <p className="text-gray-600 mb-2">
+                    {isExistingUser
+                      ? 'A user with the email address provided already exists!'
+                      : 'We\'re tailoring your resume.'}
+                  </p>
+                  <p className="text-gray-900 font-medium">
+                    Go check your email! It has a magic link to sign you in.
                   </p>
                 </div>
 
