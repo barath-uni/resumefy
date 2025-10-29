@@ -16,10 +16,14 @@
     "functions:deploy": "supabase functions deploy"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.1",
     "supabase": "^1.200.3"
   },
-  "devDependencies": {},
-  "keywords": ["resumefy", "supabase", "backend"],
+  "keywords": [
+    "resumefy",
+    "supabase",
+    "backend"
+  ],
   "author": "",
   "license": "ISC",
   "description": "Resumefy Backend with Supabase"

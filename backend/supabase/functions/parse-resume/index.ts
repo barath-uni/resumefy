@@ -1,31 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+// Import PDF.js for text extraction (no AI needed!)
+import * as pdfjsLib from 'npm:pdfjs-dist@4.0.379'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface ResumeJson {
-  header: {
-    name: string
-    email: string
-    phone: string
-    location: string
-  }
-  summary: string
-  experience: Array<{
-    title: string
-    company: string
-    dates: string
-    bullets: string[]
-  }>
-  education: Array<{
-    degree: string
-    school: string
-    year: string
-  }>
-  skills: string[]
 }
 
 Deno.serve(async (req) => {
@@ -47,7 +27,7 @@ Deno.serve(async (req) => {
       throw new Error('Missing resumeId or fileUrl')
     }
 
-    console.log(`Parsing resume: ${resumeId}`)
+    console.log(`📄 [parse-resume] Extracting text from resume: ${resumeId}`)
 
     // Update status to processing
     await supabase
@@ -60,6 +40,8 @@ Deno.serve(async (req) => {
     const urlParts = fileUrl.split('/resume/')
     const filePath = urlParts[1]
 
+    console.log(`📥 [parse-resume] Downloading file: ${filePath}`)
+
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('resume')
       .download(filePath)
@@ -68,78 +50,52 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to download file: ${downloadError.message}`)
     }
 
-    // Convert file to base64 for OpenAI
+    console.log(`✅ [parse-resume] File downloaded, size: ${fileData.size} bytes`)
+
+    // Convert Blob to ArrayBuffer for PDF.js
     const arrayBuffer = await fileData.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    const uint8Array = new Uint8Array(arrayBuffer)
 
-    // Call OpenAI API to extract structured data
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!
+    console.log(`🔍 [parse-resume] Parsing PDF with PDF.js library...`)
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a resume parser. Extract structured data from the resume and return ONLY valid JSON (no markdown, no explanations).
-
-Return this exact structure:
-{
-  "header": {
-    "name": "Full Name",
-    "email": "email@example.com",
-    "phone": "phone number",
-    "location": "city, state/country"
-  },
-  "summary": "Professional summary or objective",
-  "experience": [
-    {
-      "title": "Job Title",
-      "company": "Company Name",
-      "dates": "Start - End",
-      "bullets": ["Achievement 1", "Achievement 2"]
-    }
-  ],
-  "education": [
-    {
-      "degree": "Degree Name",
-      "school": "School Name",
-      "year": "Graduation Year"
-    }
-  ],
-  "skills": ["Skill 1", "Skill 2", "Skill 3"]
-}`
-          },
-          {
-            role: 'user',
-            content: `Parse this resume and extract structured data. The file is base64 encoded: ${base64.substring(0, 1000)}...` // Truncate for token limits
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.1,
-      }),
+    // Load PDF document using PDF.js (NO AI, pure library-based extraction)
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      useSystemFonts: true,
     })
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text()
-      throw new Error(`OpenAI API error: ${errorData}`)
+    const pdfDocument = await loadingTask.promise
+    const numPages = pdfDocument.numPages
+
+    console.log(`📖 [parse-resume] PDF has ${numPages} pages`)
+
+    // Extract text from all pages
+    let rawText = ''
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum)
+      const textContent = await page.getTextContent()
+
+      // Join text items with spaces, preserve line breaks
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ')
+
+      rawText += pageText + '\n\n'
     }
 
-    const openaiData = await openaiResponse.json()
-    const parsedJson: ResumeJson = JSON.parse(openaiData.choices[0].message.content)
+    // Clean up extracted text
+    rawText = rawText.trim()
+    const wordCount = rawText.split(/\s+/).length
 
-    console.log('Successfully parsed resume:', parsedJson.header.name)
+    console.log(`✅ [parse-resume] Extracted ${wordCount} words from ${numPages} pages`)
 
-    // Update database with parsed data
+    // Update database with raw text (NO structured JSON yet - that's Phase 3B)
     const { error: updateError } = await supabase
       .from('resumes')
       .update({
-        parsed_json: parsedJson,
+        raw_text: rawText,
+        page_count: numPages,
+        extracted_at: new Date().toISOString(),
         parsing_status: 'completed',
         updated_at: new Date().toISOString(),
       })
@@ -149,11 +105,15 @@ Return this exact structure:
       throw new Error(`Failed to update database: ${updateError.message}`)
     }
 
+    console.log(`💾 [parse-resume] Saved to database successfully`)
+
     return new Response(
       JSON.stringify({
         success: true,
         resumeId,
-        parsed: parsedJson,
+        text: rawText,
+        pages: numPages,
+        wordCount,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

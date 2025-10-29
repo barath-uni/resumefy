@@ -22,6 +22,17 @@ export interface ResumeJson {
   skills: string[]
 }
 
+// Phase 3A: Text extraction result (NO structured JSON yet)
+export interface ExtractResult {
+  success: boolean
+  resumeId?: string
+  text?: string
+  pages?: number
+  wordCount?: number
+  error?: string
+}
+
+// Phase 3B: Will be used for AI-powered tailoring (future)
 export interface ParseResult {
   success: boolean
   resumeId?: string
@@ -30,13 +41,16 @@ export interface ParseResult {
 }
 
 /**
- * Call parse-resume Edge Function to extract structured data from uploaded resume
+ * Phase 3A: Extract raw text from PDF resume (library-based, no AI)
+ * Uses PDF.js library in Edge Function - fast, reliable, $0 cost
  */
-export async function parseResume(
+export async function extractResumeText(
   resumeId: string,
   fileUrl: string
-): Promise<ParseResult> {
+): Promise<ExtractResult> {
   try {
+    console.log('📤 [extractResumeText] Calling parse-resume function...', { resumeId, fileUrl })
+
     const { data, error } = await supabase.functions.invoke('parse-resume', {
       body: {
         resumeId,
@@ -45,20 +59,39 @@ export async function parseResume(
     })
 
     if (error) {
-      console.error('Error calling parse-resume function:', error)
+      console.error('❌ [extractResumeText] Error calling function:', error)
       return {
         success: false,
-        error: error.message || 'Failed to parse resume',
+        error: error.message || 'Failed to extract text from resume',
       }
     }
 
-    return data as ParseResult
+    console.log('✅ [extractResumeText] Success:', data)
+    return data as ExtractResult
   } catch (error: any) {
-    console.error('Error parsing resume:', error)
+    console.error('❌ [extractResumeText] Unexpected error:', error)
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',
     }
+  }
+}
+
+/**
+ * Phase 3B: AI-powered resume structuring + tailoring (future)
+ * This will be implemented after Phase 3A is complete
+ */
+export async function parseResume(
+  resumeId: string,
+  fileUrl: string
+): Promise<ParseResult> {
+  // For now, just call extractResumeText
+  // In Phase 3B, this will call the tailor-resume Edge Function
+  const result = await extractResumeText(resumeId, fileUrl)
+  return {
+    success: result.success,
+    resumeId: result.resumeId,
+    error: result.error,
   }
 }
 

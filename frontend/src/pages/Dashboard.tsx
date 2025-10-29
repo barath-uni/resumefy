@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
-import { FileText, Clock, CheckCircle, AlertCircle, Sparkles, TrendingUp, Target } from 'lucide-react'
+import { FileText, Clock, CheckCircle, AlertCircle, Sparkles, TrendingUp, Target, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { analytics } from '../lib/analytics'
 import ResumeUpload from '../components/ResumeUpload'
 import { getUserResumes } from '../lib/uploadResume'
-import { parseResume, type ResumeJson } from '../lib/parseResume'
+import { extractResumeText } from '../lib/parseResume'
+import { generatePDF, downloadPDF } from '../lib/generatePDF'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -16,8 +17,14 @@ export default function Dashboard() {
   const [showProfileSetup, setShowProfileSetup] = useState(false)
   const [analysisStep, setAnalysisStep] = useState(1) // Simulate progress
   const [currentResume, setCurrentResume] = useState<any>(null)
-  const [parsedData, setParsedData] = useState<ResumeJson | null>(null)
-  const [isParsing, setIsParsing] = useState(false)
+  const [extractedText, setExtractedText] = useState<string | null>(null)
+  const [extractMetadata, setExtractMetadata] = useState<{ pages?: number; wordCount?: number } | null>(null)
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [showFullText, setShowFullText] = useState(false)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [generatedPDFUrl, setGeneratedPDFUrl] = useState<string | null>(null)
+  const [pdfWarnings, setPDFWarnings] = useState<string[]>([])
+  const [pdfOverflow, setPDFOverflow] = useState<any>(null)
   const [profile, setProfile] = useState({
     full_name: '',
     phone: '',
@@ -240,18 +247,51 @@ export default function Dashboard() {
         setCurrentResume(resumes[0])
       }
 
-      // Automatically trigger parsing
-      setIsParsing(true)
-      const result = await parseResume(resumeId, fileUrl)
+      // Phase 3A: Automatically trigger text extraction
+      setIsExtracting(true)
+      console.log('🚀 [Dashboard] Triggering text extraction for:', resumeId)
 
-      if (result.success && result.parsed) {
-        setParsedData(result.parsed)
-        setIsParsing(false)
+      const result = await extractResumeText(resumeId, fileUrl)
+
+      if (result.success && result.text) {
+        console.log('✅ [Dashboard] Text extracted successfully')
+        setExtractedText(result.text)
+        setExtractMetadata({ pages: result.pages, wordCount: result.wordCount })
+        setIsExtracting(false)
       } else {
-        setError(result.error || 'Failed to parse resume')
-        setIsParsing(false)
+        console.error('❌ [Dashboard] Extraction failed:', result.error)
+        setError(result.error || 'Failed to extract text from resume')
+        setIsExtracting(false)
       }
     }
+  }
+
+  const handleGeneratePDF = async () => {
+    if (!currentResume?.id) {
+      alert('No resume found. Please upload a resume first.')
+      return
+    }
+
+    setIsGeneratingPDF(true)
+    setGeneratedPDFUrl(null)
+    setPDFWarnings([])
+    setPDFOverflow(null)
+
+    console.log('🎨 [Dashboard] Starting PDF generation for resumeId:', currentResume.id)
+
+    const result = await generatePDF(currentResume.id)
+
+    if (result.success && result.pdfUrl) {
+      console.log('✅ [Dashboard] PDF generated successfully:', result.pdfUrl)
+      setGeneratedPDFUrl(result.pdfUrl)
+      setPDFWarnings(result.warnings || [])
+      setPDFOverflow(result.overflow || null)
+    } else {
+      console.error('❌ [Dashboard] PDF generation failed:', result.error)
+      alert(`Failed to generate PDF: ${result.error}`)
+    }
+
+    setIsGeneratingPDF(false)
   }
 
   if (loading) {
@@ -487,30 +527,174 @@ export default function Dashboard() {
               />
             )}
 
-            {/* Parsing Progress */}
-            {isParsing && (
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            {/* Phase 3A: Text Extraction Progress */}
+            {isExtracting && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+              >
                 <div className="flex items-center gap-3">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  <p className="text-blue-900 font-medium">Analyzing your resume with AI...</p>
+                  <p className="text-blue-900 font-medium">Extracting text from your resume...</p>
                 </div>
-              </div>
+                <p className="text-blue-700 text-sm mt-2">Using PDF.js library (no AI, fast & reliable)</p>
+              </motion.div>
             )}
 
-            {/* Parsed Data Display */}
-            {parsedData && !isParsing && (
-              <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Resume Parsed Successfully!</h3>
+            {/* Phase 3A: Extracted Text Display */}
+            {extractedText && !isExtracting && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <h3 className="font-semibold text-green-900">Text Extracted Successfully!</h3>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFullText(!showFullText)}
+                    className="flex items-center gap-2"
+                  >
+                    {showFullText ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {showFullText ? 'Hide' : 'Show'} Full Text
+                  </Button>
                 </div>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p><strong>Name:</strong> {parsedData.header.name}</p>
-                  <p><strong>Email:</strong> {parsedData.header.email}</p>
-                  <p><strong>Experience:</strong> {parsedData.experience.length} positions</p>
-                  <p><strong>Skills:</strong> {parsedData.skills.join(', ')}</p>
+
+                {/* Metadata */}
+                <div className="flex gap-4 mb-4 text-sm text-gray-700">
+                  {extractMetadata?.pages && (
+                    <div className="flex items-center gap-1">
+                      <FileText className="w-4 h-4" />
+                      <span><strong>{extractMetadata.pages}</strong> {extractMetadata.pages === 1 ? 'page' : 'pages'}</span>
+                    </div>
+                  )}
+                  {extractMetadata?.wordCount && (
+                    <div className="flex items-center gap-1">
+                      <Target className="w-4 h-4" />
+                      <span><strong>{extractMetadata.wordCount.toLocaleString()}</strong> words</span>
+                    </div>
+                  )}
                 </div>
-              </div>
+
+                {/* Text Preview/Full Display */}
+                {showFullText ? (
+                  <div className="bg-white p-4 rounded border border-green-300 max-h-96 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                      {extractedText}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="bg-white p-4 rounded border border-green-300">
+                    <p className="text-sm text-gray-700">
+                      {extractedText.substring(0, 300)}...
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2 italic">
+                      Click "Show Full Text" to see complete extraction
+                    </p>
+                  </div>
+                )}
+
+                {/* Phase 3C: Generate PDF Button */}
+                <div className="mt-6 p-6 bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎨 Phase 3C: Template Engine (THE MONEY MAKER)</h3>
+                  <p className="text-sm text-gray-700 mb-4">
+                    AI will intelligently structure your resume into a professional template, handling spacing, overflow, and layout decisions automatically.
+                  </p>
+
+                  <Button
+                    onClick={handleGeneratePDF}
+                    disabled={isGeneratingPDF}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium border-0 flex items-center gap-2"
+                  >
+                    {isGeneratingPDF ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        Generate PDF (Template A)
+                      </>
+                    )}
+                  </Button>
+
+                  {isGeneratingPDF && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-xs text-gray-600">⏳ Step 1: Extracting flexible blocks with AI (~$0.01)</p>
+                      <p className="text-xs text-gray-600">⏳ Step 2: Deciding optimal layout with AI (~$0.005)</p>
+                      <p className="text-xs text-gray-600">⏳ Step 3: Rendering PDF with React-PDF ($0)</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Generated PDF Display */}
+                {generatedPDFUrl && !isGeneratingPDF && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 p-6 bg-emerald-50 border border-emerald-300 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <CheckCircle className="w-6 h-6 text-emerald-600" />
+                      <h3 className="text-lg font-semibold text-emerald-900">PDF Generated Successfully!</h3>
+                    </div>
+
+                    <div className="flex gap-3 mb-4">
+                      <Button
+                        onClick={() => window.open(generatedPDFUrl, '_blank')}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded font-medium border-0"
+                      >
+                        View PDF
+                      </Button>
+                      <Button
+                        onClick={() => downloadPDF(generatedPDFUrl, 'resume_template_a.pdf')}
+                        variant="outline"
+                        className="border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded font-medium"
+                      >
+                        Download PDF
+                      </Button>
+                    </div>
+
+                    {/* Warnings */}
+                    {pdfWarnings && pdfWarnings.length > 0 && (
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-sm font-medium text-yellow-900 mb-1">⚠️ Warnings:</p>
+                        <ul className="text-xs text-yellow-800 list-disc list-inside">
+                          {pdfWarnings.map((warning, idx) => (
+                            <li key={idx}>{warning}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Overflow Recommendations */}
+                    {pdfOverflow?.hasOverflow && (
+                      <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
+                        <p className="text-sm font-medium text-orange-900 mb-1">💡 Overflow Detected ({pdfOverflow.overflowLines} lines)</p>
+                        <p className="text-xs text-orange-800 mb-2">Recommendations:</p>
+                        <ul className="text-xs text-orange-800 list-disc list-inside">
+                          {pdfOverflow.recommendations.map((rec: string, idx: number) => (
+                            <li key={idx}>{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Success Message */}
+                    {!pdfOverflow?.hasOverflow && (
+                      <div className="mt-4 p-3 bg-emerald-100 border border-emerald-200 rounded">
+                        <p className="text-sm text-emerald-900">✅ Perfect fit! Your resume fits perfectly in 1 page with Template A.</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </motion.div>
             )}
           </div>
         </div>
