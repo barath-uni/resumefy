@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase'
 import { FileText, Clock, CheckCircle, AlertCircle, Sparkles, TrendingUp, Target } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { analytics } from '../lib/analytics'
+import ResumeUpload from '../components/ResumeUpload'
+import { getUserResumes } from '../lib/uploadResume'
+import { parseResume, type ResumeJson } from '../lib/parseResume'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -12,6 +15,9 @@ export default function Dashboard() {
   const [emailData, setEmailData] = useState<any>(null)
   const [showProfileSetup, setShowProfileSetup] = useState(false)
   const [analysisStep, setAnalysisStep] = useState(1) // Simulate progress
+  const [currentResume, setCurrentResume] = useState<any>(null)
+  const [parsedData, setParsedData] = useState<ResumeJson | null>(null)
+  const [isParsing, setIsParsing] = useState(false)
   const [profile, setProfile] = useState({
     full_name: '',
     phone: '',
@@ -22,12 +28,17 @@ export default function Dashboard() {
   useEffect(() => {
     const handleAuthFlow = async () => {
       try {
+        console.log('🔐 [Dashboard] Starting auth flow...')
+
         // Check URL for error parameters (expired links, etc.)
         const urlParams = new URLSearchParams(window.location.hash.substring(1))
         const error = urlParams.get('error')
         const errorDescription = urlParams.get('error_description')
 
+        console.log('🔍 [Dashboard] URL params:', { error, errorDescription, hash: window.location.hash })
+
         if (error === 'access_denied' && errorDescription?.includes('expired')) {
+          console.log('❌ [Dashboard] Link expired')
           setError('Your email link has expired. Please upload your resume again to get a new link.')
           setLoading(false)
           return
@@ -35,6 +46,8 @@ export default function Dashboard() {
 
         // Handle auth state changes from URL (signup confirmation)
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('🔄 [Dashboard] Auth state changed:', event, session?.user?.email)
+
           if (event === 'SIGNED_IN' && session?.user) {
             setUser(session.user)
             await handleUserSession(session.user)
@@ -49,7 +62,10 @@ export default function Dashboard() {
         // Also check current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
+        console.log('🔑 [Dashboard] Current session:', session?.user?.email)
+
         if (sessionError) {
+          console.error('❌ [Dashboard] Session error:', sessionError)
           throw sessionError
         }
 
@@ -59,7 +75,9 @@ export default function Dashboard() {
 
           // Track dashboard reached - KEY METRIC!
           analytics.trackDashboardReached()
+          console.log('✅ [Dashboard] Auth complete!')
         } else {
+          console.log('⚠️ [Dashboard] No active session')
           setError('Please check your email and click the confirmation link to access your dashboard.')
         }
 
@@ -75,8 +93,12 @@ export default function Dashboard() {
     }
 
     const handleUserSession = async (user: any) => {
+      console.log('👤 [Dashboard] Handling user session...', user.email)
+
       // Get the email capture data using the custom token from user metadata
       const customToken = user.user_metadata?.custom_token
+      console.log('🔑 [Dashboard] Custom token:', customToken)
+
       if (customToken) {
         // Update our custom magic link tracking
         const { data: magicLink, error: linkError } = await supabase
@@ -84,6 +106,8 @@ export default function Dashboard() {
           .select('*, email_captures(*)')
           .eq('token', customToken)
           .single()
+
+        console.log('🔗 [Dashboard] Magic link data:', magicLink)
 
         if (!linkError && magicLink) {
           // Mark as clicked
@@ -102,8 +126,48 @@ export default function Dashboard() {
 
           setEmailData(magicLink.email_captures)
 
+          console.log('📄 [Dashboard] Email capture data:', magicLink.email_captures)
+
+          // Load uploaded resume if it exists
+          if (magicLink.email_captures?.uploaded_file_url) {
+            console.log('📎 [Dashboard] Found uploaded file:', magicLink.email_captures.uploaded_file_url)
+            setCurrentResume({
+              id: magicLink.email_captures.id,
+              file_name: magicLink.email_captures.uploaded_file_name,
+              file_url: magicLink.email_captures.uploaded_file_url,
+              file_size: magicLink.email_captures.uploaded_file_size,
+              created_at: magicLink.email_captures.uploaded_at
+            })
+          }
+
           // Track magic link clicked - KEY METRIC!
           analytics.trackMagicLinkClicked()
+        }
+      } else {
+        // Fallback: Try to fetch email_captures by user email
+        console.log('⚠️ [Dashboard] No custom token, fetching by email...')
+        const { data: emailCaptures, error: captureError } = await supabase
+          .from('email_captures')
+          .select('*')
+          .eq('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (!captureError && emailCaptures && emailCaptures.length > 0) {
+          console.log('📧 [Dashboard] Found email capture:', emailCaptures[0])
+          setEmailData(emailCaptures[0])
+
+          // Load uploaded resume if it exists
+          if (emailCaptures[0].uploaded_file_url) {
+            console.log('📎 [Dashboard] Found uploaded file:', emailCaptures[0].uploaded_file_url)
+            setCurrentResume({
+              id: emailCaptures[0].id,
+              file_name: emailCaptures[0].uploaded_file_name,
+              file_url: emailCaptures[0].uploaded_file_url,
+              file_size: emailCaptures[0].uploaded_file_size,
+              created_at: emailCaptures[0].uploaded_at
+            })
+          }
         }
       }
 
@@ -116,6 +180,16 @@ export default function Dashboard() {
 
       if (!existingProfile) {
         setShowProfileSetup(true)
+      }
+
+      // Load user's resumes
+      await loadResumes(user.id)
+    }
+
+    const loadResumes = async (userId: string) => {
+      const resumes = await getUserResumes(userId)
+      if (resumes && resumes.length > 0) {
+        setCurrentResume(resumes[0]) // Use most recent resume
       }
     }
 
@@ -155,6 +229,28 @@ export default function Dashboard() {
     } catch (error: any) {
       console.error('Profile creation error:', error)
       alert('Failed to create profile. Please try again.')
+    }
+  }
+
+  const handleUploadSuccess = async (resumeId: string, fileUrl: string) => {
+    // Reload resumes to get the new one
+    if (user) {
+      const resumes = await getUserResumes(user.id)
+      if (resumes && resumes.length > 0) {
+        setCurrentResume(resumes[0])
+      }
+
+      // Automatically trigger parsing
+      setIsParsing(true)
+      const result = await parseResume(resumeId, fileUrl)
+
+      if (result.success && result.parsed) {
+        setParsedData(result.parsed)
+        setIsParsing(false)
+      } else {
+        setError(result.error || 'Failed to parse resume')
+        setIsParsing(false)
+      }
     }
   }
 
@@ -368,6 +464,54 @@ export default function Dashboard() {
                 <span>Started {new Date().toLocaleTimeString()}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Resume Upload Section */}
+        <div className="mb-12">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <h2 className="text-2xl font-heading font-bold text-gray-900 mb-2">
+              {currentResume ? 'Your Resume' : 'Upload Your Resume'}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {currentResume
+                ? 'Your resume is ready. You can replace it anytime.'
+                : 'Get started by uploading your resume in PDF or DOCX format'
+              }
+            </p>
+            {user && (
+              <ResumeUpload
+                userId={user.id}
+                onUploadSuccess={handleUploadSuccess}
+                existingResume={currentResume}
+              />
+            )}
+
+            {/* Parsing Progress */}
+            {isParsing && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <p className="text-blue-900 font-medium">Analyzing your resume with AI...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Parsed Data Display */}
+            {parsedData && !isParsing && (
+              <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-green-900">Resume Parsed Successfully!</h3>
+                </div>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p><strong>Name:</strong> {parsedData.header.name}</p>
+                  <p><strong>Email:</strong> {parsedData.header.email}</p>
+                  <p><strong>Experience:</strong> {parsedData.experience.length} positions</p>
+                  <p><strong>Skills:</strong> {parsedData.skills.join(', ')}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

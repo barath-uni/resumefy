@@ -10,7 +10,10 @@
     "supabase:deploy": "supabase db push",
     "supabase:reset": "supabase db reset",
     "deploy:prod": "npm run supabase:deploy",
-    "setup": "supabase login && npm run supabase:link"
+    "setup": "supabase login && npm run supabase:link",
+    "functions:new": "supabase functions new",
+    "functions:serve": "supabase functions serve",
+    "functions:deploy": "supabase functions deploy"
   },
   "dependencies": {
     "supabase": "^1.200.3"
