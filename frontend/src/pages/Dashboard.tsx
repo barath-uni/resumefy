@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
-import { FileText, Clock, CheckCircle, AlertCircle, Sparkles, TrendingUp, Target, ChevronDown, ChevronUp } from 'lucide-react'
+import { FileText, Clock, CheckCircle, Target, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { analytics } from '../lib/analytics'
 import ResumeUpload from '../components/ResumeUpload'
 import { getUserResumes } from '../lib/uploadResume'
 import { extractResumeText } from '../lib/parseResume'
-import { generatePDF, downloadPDF } from '../lib/generatePDF'
+import JobDescriptionSection from '../components/JobDescriptionSection'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -15,16 +15,11 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [emailData, setEmailData] = useState<any>(null)
   const [showProfileSetup, setShowProfileSetup] = useState(false)
-  const [analysisStep, setAnalysisStep] = useState(1) // Simulate progress
   const [currentResume, setCurrentResume] = useState<any>(null)
   const [extractedText, setExtractedText] = useState<string | null>(null)
   const [extractMetadata, setExtractMetadata] = useState<{ pages?: number; wordCount?: number } | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [showFullText, setShowFullText] = useState(false)
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
-  const [generatedPDFUrl, setGeneratedPDFUrl] = useState<string | null>(null)
-  const [pdfWarnings, setPDFWarnings] = useState<string[]>([])
-  const [pdfOverflow, setPDFOverflow] = useState<any>(null)
   const [profile, setProfile] = useState({
     full_name: '',
     phone: '',
@@ -196,24 +191,21 @@ export default function Dashboard() {
     const loadResumes = async (userId: string) => {
       const resumes = await getUserResumes(userId)
       if (resumes && resumes.length > 0) {
-        setCurrentResume(resumes[0]) // Use most recent resume
+        const mostRecentResume = resumes[0]
+        setCurrentResume(mostRecentResume) // Use most recent resume
+
+        // Load extracted text if available
+        if (mostRecentResume.raw_text) {
+          setExtractedText(mostRecentResume.raw_text)
+          setExtractMetadata({
+            pages: mostRecentResume.page_count,
+            wordCount: mostRecentResume.raw_text.split(/\s+/).length
+          })
+        }
       }
     }
 
     handleAuthFlow()
-
-    // Simulate analysis progress for demo
-    const progressTimer = setInterval(() => {
-      setAnalysisStep(prev => {
-        if (prev >= 4) {
-          clearInterval(progressTimer)
-          return 4
-        }
-        return prev + 1
-      })
-    }, 2000)
-
-    return () => clearInterval(progressTimer)
   }, [])
 
   const handleProfileSubmit = async () => {
@@ -264,34 +256,6 @@ export default function Dashboard() {
         setIsExtracting(false)
       }
     }
-  }
-
-  const handleGeneratePDF = async () => {
-    if (!currentResume?.id) {
-      alert('No resume found. Please upload a resume first.')
-      return
-    }
-
-    setIsGeneratingPDF(true)
-    setGeneratedPDFUrl(null)
-    setPDFWarnings([])
-    setPDFOverflow(null)
-
-    console.log('🎨 [Dashboard] Starting PDF generation for resumeId:', currentResume.id)
-
-    const result = await generatePDF(currentResume.id)
-
-    if (result.success && result.pdfUrl) {
-      console.log('✅ [Dashboard] PDF generated successfully:', result.pdfUrl)
-      setGeneratedPDFUrl(result.pdfUrl)
-      setPDFWarnings(result.warnings || [])
-      setPDFOverflow(result.overflow || null)
-    } else {
-      console.error('❌ [Dashboard] PDF generation failed:', result.error)
-      alert(`Failed to generate PDF: ${result.error}`)
-    }
-
-    setIsGeneratingPDF(false)
   }
 
   if (loading) {
@@ -599,105 +563,18 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Phase 3C: Generate PDF Button */}
-                <div className="mt-6 p-6 bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎨 Phase 3C: Template Engine (THE MONEY MAKER)</h3>
-                  <p className="text-sm text-gray-700 mb-4">
-                    AI will intelligently structure your resume into a professional template, handling spacing, overflow, and layout decisions automatically.
-                  </p>
-
-                  <Button
-                    onClick={handleGeneratePDF}
-                    disabled={isGeneratingPDF}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium border-0 flex items-center gap-2"
-                  >
-                    {isGeneratingPDF ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Generating PDF...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4" />
-                        Generate PDF (Template A)
-                      </>
-                    )}
-                  </Button>
-
-                  {isGeneratingPDF && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-xs text-gray-600">⏳ Step 1: Extracting flexible blocks with AI (~$0.01)</p>
-                      <p className="text-xs text-gray-600">⏳ Step 2: Deciding optimal layout with AI (~$0.005)</p>
-                      <p className="text-xs text-gray-600">⏳ Step 3: Rendering PDF with React-PDF ($0)</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Generated PDF Display */}
-                {generatedPDFUrl && !isGeneratingPDF && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-6 p-6 bg-emerald-50 border border-emerald-300 rounded-lg"
-                  >
-                    <div className="flex items-center gap-2 mb-4">
-                      <CheckCircle className="w-6 h-6 text-emerald-600" />
-                      <h3 className="text-lg font-semibold text-emerald-900">PDF Generated Successfully!</h3>
-                    </div>
-
-                    <div className="flex gap-3 mb-4">
-                      <Button
-                        onClick={() => window.open(generatedPDFUrl, '_blank')}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded font-medium border-0"
-                      >
-                        View PDF
-                      </Button>
-                      <Button
-                        onClick={() => downloadPDF(generatedPDFUrl, 'resume_template_a.pdf')}
-                        variant="outline"
-                        className="border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded font-medium"
-                      >
-                        Download PDF
-                      </Button>
-                    </div>
-
-                    {/* Warnings */}
-                    {pdfWarnings && pdfWarnings.length > 0 && (
-                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="text-sm font-medium text-yellow-900 mb-1">⚠️ Warnings:</p>
-                        <ul className="text-xs text-yellow-800 list-disc list-inside">
-                          {pdfWarnings.map((warning, idx) => (
-                            <li key={idx}>{warning}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Overflow Recommendations */}
-                    {pdfOverflow?.hasOverflow && (
-                      <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
-                        <p className="text-sm font-medium text-orange-900 mb-1">💡 Overflow Detected ({pdfOverflow.overflowLines} lines)</p>
-                        <p className="text-xs text-orange-800 mb-2">Recommendations:</p>
-                        <ul className="text-xs text-orange-800 list-disc list-inside">
-                          {pdfOverflow.recommendations.map((rec: string, idx: number) => (
-                            <li key={idx}>{rec}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Success Message */}
-                    {!pdfOverflow?.hasOverflow && (
-                      <div className="mt-4 p-3 bg-emerald-100 border border-emerald-200 rounded">
-                        <p className="text-sm text-emerald-900">✅ Perfect fit! Your resume fits perfectly in 1 page with Template A.</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
               </motion.div>
             )}
           </div>
         </div>
+
+        {/* Job Descriptions Section - Always show if resume exists */}
+        {user && currentResume && (
+          <JobDescriptionSection
+            resumeId={currentResume.id}
+            userId={user.id}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
           {/* Upload Details Card */}
@@ -732,160 +609,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-
-          {/* Analysis Progress Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">AI Analysis</h2>
-                  <p className="text-xs text-gray-500">Processing status</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-emerald-600">{analysisStep}/4</div>
-                <div className="text-xs text-gray-500">Steps</div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { step: 1, label: 'Resume parsing', status: analysisStep >= 1 ? 'complete' : 'pending' },
-                { step: 2, label: 'Role matching', status: analysisStep >= 2 ? 'complete' : analysisStep === 1 ? 'active' : 'pending' },
-                { step: 3, label: 'Optimization analysis', status: analysisStep >= 3 ? 'complete' : analysisStep === 2 ? 'active' : 'pending' },
-                { step: 4, label: 'Report generation', status: analysisStep >= 4 ? 'complete' : analysisStep === 3 ? 'active' : 'pending' }
-              ].map((item) => (
-                <motion.div
-                  key={item.step}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 + item.step * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  {item.status === 'complete' ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : item.status === 'active' ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Clock className="w-5 h-5 text-blue-500" />
-                    </motion.div>
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                  )}
-                  <span className={`${item.status === 'complete' ? 'text-green-500' : item.status === 'active' ? 'text-blue-600' : 'text-gray-500'}`}>
-                    {item.label}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Next Steps Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Next Steps</h2>
-                  <p className="text-xs text-gray-500">What's coming</p>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-blue-600 font-semibold text-xs">1</span>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900 text-sm">Resume Review</div>
-                  <div className="text-xs text-gray-500">Check parsed content & make edits</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-emerald-600 font-semibold text-xs">2</span>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900 text-sm">Role Optimization</div>
-                  <div className="text-xs text-gray-500">Get tailored recommendations</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-purple-600 font-semibold text-xs">3</span>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900 text-sm">Download Results</div>
-                  <div className="text-xs text-gray-500">Export optimized resume files</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-
-        {/* Analysis Results / Error State */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-lg transition-all"
-        >
-          {analysisStep < 4 ? (
-            <div className="text-center">
-              <motion.div
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-16 h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full mx-auto mb-4 flex items-center justify-center"
-              >
-                <Sparkles className="w-8 h-8 text-white" />
-              </motion.div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Analysis in Progress...</h3>
-              <p className="text-gray-600">Our AI is analyzing your resume and generating personalized recommendations.</p>
-            </div>
-          ) : (
-            <div className="text-center">
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-16 h-16 bg-red-50 rounded-full mx-auto mb-4 flex items-center justify-center"
-              >
-                <AlertCircle className="w-8 h-8 text-red-500" />
-              </motion.div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Feature Not Available</h3>
-              <p className="text-gray-600 mb-6">
-                Resume analysis and optimization features are currently under development.
-                We're working hard to bring you AI-powered insights soon!
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <Target className="w-5 h-5 text-blue-600 mb-2" />
-                  <h4 className="text-gray-900 font-medium mb-1">Coming Next</h4>
-                  <p className="text-gray-600 text-sm">Resume parsing & role matching</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <TrendingUp className="w-5 h-5 text-emerald-600 mb-2" />
-                  <h4 className="text-gray-900 font-medium mb-1">MVP Features</h4>
-                  <p className="text-gray-600 text-sm">AI optimization & file generation</p>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => window.location.href = '/'}
-                className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium border-0"
-              >
-                Back to Home
-              </Button>
-            </div>
-          )}
-        </motion.div>
       </div>
 
       {/* Footer - Matching Landing Page */}
