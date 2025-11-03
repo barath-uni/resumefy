@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react"
-import { Routes, Route, useNavigate } from "react-router-dom"
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom"
 import UploadModal from "./components/UploadModal"
-import Dashboard from "./pages/Dashboard"
+import DashboardPage from "./pages/DashboardPage"
+import MyResumesPage from "./pages/MyResumesPage"
+import TailorResumePage from "./pages/TailorResumePage"
+import TailoringPage from "./pages/TailoringPage"
+import BillingPage from "./pages/BillingPage"
 import Landing from "./pages/Landing"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
 import Support from "./pages/Support"
+import AppLayout from "./components/layout/AppLayout"
 import { analytics, initGA } from "./lib/analytics"
 import { supabase } from "./lib/supabase"
 
@@ -73,10 +78,52 @@ function App() {
             />
           }
         />
+
+        {/* Redirect /dashboard to /app/dashboard */}
         <Route
           path="/dashboard"
-          element={<Dashboard />} // Dashboard handles its own auth check
+          element={<Navigate to="/app/dashboard" replace />}
         />
+
+        {/* V2.5 App Routes with AppLayout */}
+        <Route
+          path="/app/dashboard"
+          element={
+            <AppLayout>
+              <DashboardPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/my-resumes"
+          element={
+            <AppLayout>
+              <MyResumesPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/tailor-resume"
+          element={
+            <AppLayout>
+              <TailorResumePage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/tailor/:resumeId"
+          element={
+            <AppLayout>
+              <TailoringPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/billing"
+          element={<BillingPage />}
+        />
+
+        {/* Static Pages */}
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/support" element={<Support />} />

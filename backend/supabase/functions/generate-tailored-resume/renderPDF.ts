@@ -7,11 +7,11 @@ import PdfPrinter from 'npm:pdfmake@0.2.10'
 
 interface ContentBlock {
   id: string
-  type: 'header' | 'section' | 'list' | 'text'
+  type?: 'header' | 'section' | 'list' | 'text'
   category: string
   priority: number
   content: any
-  metadata: {
+  metadata?: {
     estimatedLines: number
     isOptional: boolean
     keywords: string[]
@@ -37,6 +37,8 @@ interface LayoutDecision {
  * Render Template A: Modern Single Column
  */
 function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
+  console.log('📄 [renderTemplateA] Blocks count:', blocks.length)
+
   // Sort blocks by placement order
   const sortedBlocks = [...blocks].sort((a, b) => {
     const orderA = layout.placement[a.id]?.order ?? 999
@@ -44,15 +46,25 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
     return orderA - orderB
   })
 
+  console.log('📄 [renderTemplateA] Sorted blocks:', sortedBlocks.map(b => ({ id: b.id, category: b.category, type: b.type })))
+
   const content: any[] = []
+
+  // Track which section titles we've already added
+  const sectionsAdded = new Set<string>()
 
   // Render each block
   for (const block of sortedBlocks) {
     const placement = layout.placement[block.id]
-    if (!placement) continue
+    console.log(`📄 [renderTemplateA] Processing block ${block.id} (${block.category}/${block.type}), has placement: ${!!placement}`)
+    if (!placement) {
+      console.log(`⚠️  [renderTemplateA] Skipping block ${block.id} - no placement`)
+      continue
+    }
 
-    if (block.category === 'contact' && block.type === 'header') {
-      // Header block
+    // CONTACT BLOCK
+    if (block.category === 'contact') {
+      console.log('📄 Rendering contact:', block.content)
       content.push({
         text: block.content.name || 'Your Name',
         style: 'name',
@@ -64,6 +76,7 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
       if (block.content.phone) contactInfo.push(block.content.phone)
       if (block.content.location) contactInfo.push(block.content.location)
       if (block.content.linkedin) contactInfo.push(block.content.linkedin)
+      if (block.content.github) contactInfo.push(block.content.github)
 
       if (contactInfo.length > 0) {
         content.push({
@@ -74,87 +87,138 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
       }
 
       content.push({
-        canvas: [
-          {
-            type: 'line',
-            x1: 0, y1: 0,
-            x2: 515, y2: 0,
-            lineWidth: 2,
-            lineColor: '#333333'
-          }
-        ],
+        canvas: [{
+          type: 'line',
+          x1: 0, y1: 0,
+          x2: 515, y2: 0,
+          lineWidth: 2,
+          lineColor: '#333333'
+        }],
         margin: [0, 0, 0, 15]
       })
+    }
 
-    } else if (block.category === 'experience' && block.type === 'section') {
-      // Experience section
+    // SUMMARY BLOCK
+    else if (block.category === 'summary') {
+      console.log('📄 Rendering summary')
       content.push({
-        text: 'EXPERIENCE',
+        text: 'PROFESSIONAL SUMMARY',
         style: 'sectionTitle',
         margin: [0, 5, 0, 10]
       })
 
-      if (Array.isArray(block.content)) {
-        for (const entry of block.content) {
+      if (block.content?.text) {
+        content.push({
+          text: block.content.text,
+          style: 'body',
+          margin: [0, 0, 0, 15]
+        })
+      }
+    }
+
+    // EXPERIENCE BLOCK
+    else if (block.category === 'experience') {
+      console.log('📄 Rendering experience:', block.id)
+
+      // Add section title only once
+      if (!sectionsAdded.has('experience')) {
+        content.push({
+          text: 'EXPERIENCE',
+          style: 'sectionTitle',
+          margin: [0, 5, 0, 10]
+        })
+        sectionsAdded.add('experience')
+      }
+
+      const exp = block.content
+      if (exp.title || exp.company) {
+        content.push({
+          text: exp.title || exp.position || '',
+          style: 'jobTitle',
+          margin: [0, 0, 0, 3]
+        })
+
+        const companyLine = []
+        if (exp.company) companyLine.push(exp.company)
+        if (exp.location) companyLine.push(exp.location)
+
+        if (companyLine.length > 0) {
           content.push({
-            text: entry.title || entry.position || '',
-            style: 'jobTitle',
-            margin: [0, 0, 0, 3]
-          })
-          content.push({
-            text: entry.company || '',
+            text: companyLine.join(' • '),
             style: 'company',
             margin: [0, 0, 0, 2]
           })
-          if (entry.dates) {
-            content.push({
-              text: entry.dates,
-              style: 'dates',
-              margin: [0, 0, 0, 5]
-            })
-          }
-          if (entry.bullets && Array.isArray(entry.bullets)) {
-            content.push({
-              ul: entry.bullets,
-              style: 'bulletList',
-              margin: [0, 0, 0, 10]
-            })
-          }
+        }
+
+        const dateRange = []
+        if (exp.startDate) dateRange.push(exp.startDate)
+        if (exp.endDate) dateRange.push(exp.endDate)
+
+        if (dateRange.length > 0) {
+          content.push({
+            text: dateRange.join(' - '),
+            style: 'dates',
+            margin: [0, 0, 0, 5]
+          })
+        }
+
+        if (Array.isArray(exp.bullets) && exp.bullets.length > 0) {
+          content.push({
+            ul: exp.bullets,
+            style: 'bulletList',
+            margin: [0, 0, 0, 12]
+          })
         }
       }
+    }
 
-    } else if (block.category === 'education' && block.type === 'section') {
-      // Education section
-      content.push({
-        text: 'EDUCATION',
-        style: 'sectionTitle',
-        margin: [0, 5, 0, 10]
-      })
+    // EDUCATION BLOCK
+    else if (block.category === 'education') {
+      console.log('📄 Rendering education:', block.id)
 
-      if (Array.isArray(block.content)) {
-        for (const entry of block.content) {
+      // Add section title only once
+      if (!sectionsAdded.has('education')) {
+        content.push({
+          text: 'EDUCATION',
+          style: 'sectionTitle',
+          margin: [0, 5, 0, 10]
+        })
+        sectionsAdded.add('education')
+      }
+
+      const edu = block.content
+      if (edu.degree || edu.school) {
+        content.push({
+          text: edu.degree || '',
+          style: 'degree',
+          margin: [0, 0, 0, 2]
+        })
+
+        const schoolLine = []
+        if (edu.school || edu.institution) schoolLine.push(edu.school || edu.institution)
+        if (edu.location) schoolLine.push(edu.location)
+
+        if (schoolLine.length > 0) {
           content.push({
-            text: entry.degree || '',
-            style: 'degree',
-            margin: [0, 0, 0, 2]
-          })
-          content.push({
-            text: entry.school || entry.institution || '',
+            text: schoolLine.join(' • '),
             style: 'school',
             margin: [0, 0, 0, 2]
           })
-          if (entry.year) {
-            content.push({
-              text: entry.year,
-              style: 'dates',
-              margin: [0, 0, 0, 8]
-            })
-          }
+        }
+
+        if (edu.graduationDate || edu.year) {
+          content.push({
+            text: edu.graduationDate || edu.year,
+            style: 'dates',
+            margin: [0, 0, 0, 10]
+          })
         }
       }
+    }
 
-    } else if (block.category === 'skills' && block.type === 'list') {
-      // Skills section
+    // SKILLS BLOCK
+    else if (block.category === 'skills') {
+      console.log('📄 Rendering skills:', block.content)
       content.push({
         text: 'SKILLS',
         style: 'sectionTitle',
@@ -165,78 +229,101 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
         content.push({
           text: block.content.join(' • '),
           style: 'skills',
-          margin: [0, 0, 0, 10]
+          margin: [0, 0, 0, 15]
+        })
+      } else if (typeof block.content === 'string') {
+        content.push({
+          text: block.content,
+          style: 'skills',
+          margin: [0, 0, 0, 15]
         })
       }
+    }
 
-    } else if (block.category === 'projects' && block.type === 'section') {
-      // Projects section
-      content.push({
-        text: 'PROJECTS',
-        style: 'sectionTitle',
-        margin: [0, 5, 0, 10]
-      })
+    // PROJECTS BLOCK
+    else if (block.category === 'projects') {
+      console.log('📄 Rendering projects')
 
-      if (Array.isArray(block.content)) {
-        for (const project of block.content) {
-          content.push({
-            text: project.title || project.name || '',
-            style: 'jobTitle',
-            margin: [0, 0, 0, 3]
-          })
-          if (project.description) {
-            content.push({
-              text: project.description,
-              style: 'body',
-              margin: [0, 0, 0, 5]
-            })
-          }
-          if (project.technologies) {
-            const techText = Array.isArray(project.technologies)
-              ? project.technologies.join(', ')
-              : project.technologies
-            content.push({
-              text: `Technologies: ${techText}`,
-              style: 'dates',
-              margin: [0, 0, 0, 8]
-            })
-          }
-        }
+      if (!sectionsAdded.has('projects')) {
+        content.push({
+          text: 'PROJECTS',
+          style: 'sectionTitle',
+          margin: [0, 5, 0, 10]
+        })
+        sectionsAdded.add('projects')
       }
 
-    } else if (block.category === 'certifications' && block.type === 'section') {
-      // Certifications section
-      content.push({
-        text: 'CERTIFICATIONS',
-        style: 'sectionTitle',
-        margin: [0, 5, 0, 10]
-      })
+      const proj = block.content
+      if (proj.title || proj.name) {
+        content.push({
+          text: proj.title || proj.name || '',
+          style: 'jobTitle',
+          margin: [0, 0, 0, 3]
+        })
 
-      if (Array.isArray(block.content)) {
-        for (const cert of block.content) {
+        if (proj.description) {
           content.push({
-            text: cert.name || cert.title || '',
-            style: 'degree',
+            text: proj.description,
+            style: 'body',
+            margin: [0, 0, 0, 5]
+          })
+        }
+
+        if (proj.technologies) {
+          const techText = Array.isArray(proj.technologies)
+            ? proj.technologies.join(', ')
+            : proj.technologies
+
+          content.push({
+            text: `Technologies: ${techText}`,
+            style: 'dates',
+            margin: [0, 0, 0, 12]
+          })
+        }
+      }
+    }
+
+    // CERTIFICATIONS BLOCK
+    else if (block.category === 'certifications') {
+      console.log('📄 Rendering certifications')
+
+      if (!sectionsAdded.has('certifications')) {
+        content.push({
+          text: 'CERTIFICATIONS',
+          style: 'sectionTitle',
+          margin: [0, 5, 0, 10]
+        })
+        sectionsAdded.add('certifications')
+      }
+
+      const cert = block.content
+      if (cert.name || cert.title) {
+        content.push({
+          text: cert.name || cert.title || '',
+          style: 'degree',
+          margin: [0, 0, 0, 2]
+        })
+
+        if (cert.issuer) {
+          content.push({
+            text: cert.issuer,
+            style: 'school',
             margin: [0, 0, 0, 2]
           })
-          if (cert.issuer) {
-            content.push({
-              text: cert.issuer,
-              style: 'school',
-              margin: [0, 0, 0, 2]
-            })
-          }
-          if (cert.date) {
-            content.push({
-              text: cert.date,
-              style: 'dates',
-              margin: [0, 0, 0, 8]
-            })
-          }
+        }
+
+        if (cert.date) {
+          content.push({
+            text: cert.date,
+            style: 'dates',
+            margin: [0, 0, 0, 10]
+          })
         }
       }
     }
   }
+
+  console.log('📄 [renderTemplateA] Final content length:', content.length)
 
   // Add warnings footer if any
   if (layout.warnings && layout.warnings.length > 0) {
@@ -320,6 +407,9 @@ export async function renderPDF(
 ): Promise<Uint8Array> {
 
   console.log('📄 [renderPDF] Rendering template:', templateName)
+  console.log('📄 [renderPDF] Blocks received:', blocks.length)
+  console.log('📄 [renderPDF] Layout placement keys:', Object.keys(layout.placement))
+  console.log('📄 [renderPDF] First 3 blocks:', JSON.stringify(blocks.slice(0, 3), null, 2))
 
   let docDefinition: any
 
@@ -338,6 +428,9 @@ export async function renderPDF(
     default:
       docDefinition = renderTemplateA(blocks, layout)
   }
+
+  console.log('📄 [renderPDF] Doc definition content length:', docDefinition.content?.length || 0)
+  console.log('📄 [renderPDF] Doc definition content first 3 items:', JSON.stringify(docDefinition.content?.slice(0, 3), null, 2))
 
   // Define fonts
   const fonts = {

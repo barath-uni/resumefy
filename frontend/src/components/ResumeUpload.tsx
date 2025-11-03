@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { uploadResume } from '../lib/uploadResume'
+import { checkCanUploadResume } from '../lib/paywall'
+import { PaywallModal } from './PaywallModal'
 
 interface ResumeUploadProps {
   userId: string
@@ -21,6 +23,10 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
+  const [paywallMessage, setPaywallMessage] = useState<string>('')
+  const [paywallCurrent, setPaywallCurrent] = useState<number | undefined>(undefined)
+  const [paywallLimit, setPaywallLimit] = useState<number | undefined>(undefined)
 
   console.log('🎨 ResumeUpload rendered', { userId, existingResume })
 
@@ -34,6 +40,21 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
     }
 
     console.log('📄 File selected:', { name: file.name, size: file.size, type: file.type })
+
+    // PAYWALL CHECK - Frontend Layer
+    console.log('🔒 [Paywall] Checking if user can upload resume...')
+    const paywallCheck = await checkCanUploadResume(userId)
+
+    if (!paywallCheck.allowed) {
+      console.log('❌ [Paywall] Resume upload blocked:', paywallCheck.reason)
+      setPaywallMessage(paywallCheck.message || 'Resume upload limit reached')
+      setPaywallCurrent(paywallCheck.current)
+      setPaywallLimit(paywallCheck.limit)
+      setShowPaywall(true)
+      return // STOP HERE - Don't upload
+    }
+
+    console.log('✅ [Paywall] User authorized to upload resume')
 
     setUploadedFile(file)
     setError(null)
@@ -230,8 +251,7 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
       {existingResume && !uploadedFile && (
         <Button
           {...getRootProps()}
-          variant="outline"
-          className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+          size="sm" aria-label="Submit" variant="outline"
           disabled={uploading}
         >
           <input {...getInputProps()} />
@@ -248,6 +268,17 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
           )}
         </Button>
       )}
+
+      {/* Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        reason="resume_limit"
+        currentTier="free"
+        current={paywallCurrent}
+        limit={paywallLimit}
+        message={paywallMessage}
+      />
     </div>
   )
 }

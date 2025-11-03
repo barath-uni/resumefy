@@ -7,40 +7,48 @@
 
 @layer base {
   :root {
-    /* Updated ShadCN CSS Variables - Clean & Professional */
-    --background: 255 255 255; /* Pure white background */
-    --foreground: 17 24 39; /* gray-900 for sharp text */
+    /* ShadCN CSS Variables - HSL Format with Green Primary (#4CAF50) */
+    --background: 0 0% 100%; /* Pure white background */
+    --foreground: 222 47% 11%; /* gray-900 for sharp text */
 
-    --card: 255 255 255; /* White cards */
-    --card-foreground: 17 24 39; /* gray-900 */
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 222 47% 11%; /* gray-900 */
 
-    --popover: 255 255 255;
-    --popover-foreground: 17 24 39;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 37 99 235; /* blue-600 */
-    --primary-foreground: 255 255 255;
+    --primary: 122 39% 49%; /* #4CAF50 - Material Design Green */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 16 185 129; /* emerald-500 */
-    --secondary-foreground: 255 255 255;
+    --secondary: 160 84% 39%; /* emerald-500 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 249 250 251; /* gray-50 */
-    --muted-foreground: 107 114 128; /* gray-500 */
+    --muted: 210 40% 98%; /* gray-50 */
+    --muted-foreground: 215 16% 47%; /* gray-500 */
 
-    --accent: 16 185 129; /* emerald-500 */
-    --accent-foreground: 255 255 255;
+    --accent: 160 84% 39%; /* emerald-500 */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 239 68 68; /* red-500 */
-    --destructive-foreground: 255 255 255;
+    --destructive: 0 84% 60%; /* red-500 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 229 231 235; /* gray-200 */
-    --input: 249 250 251; /* gray-50 */
-    --ring: 16 185 129; /* emerald-500 for focus rings */
+    --border: 220 13% 91%; /* gray-200 */
+    --input: 210 40% 98%; /* gray-50 */
+    --ring: 122 39% 49%; /* green for focus rings */
     --radius: 0.75rem;
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: auto;
     -moz-osx-font-smoothing: auto;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   html {
@@ -50,8 +58,8 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: rgb(var(--background));
-    color: rgb(var(--foreground));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -90,6 +98,24 @@
   .fix-compositing-text * {
     -webkit-font-smoothing: subpixel-antialiased !important;
     -moz-osx-font-smoothing: auto !important;
+  }
+  .theme {
+    --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+    --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+    --animate-shiny-text: shiny-text 8s infinite;
+    --animate-gradient: gradient 8s linear infinite;
+    --animate-grid: grid 15s linear infinite;
+    --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+  }
+  .dark {
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -142,5 +168,84 @@
 
   .bg-gradient-radial {
     background-image: radial-gradient(var(--tw-gradient-stops));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@theme inline {
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+    }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+    }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+    }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+    }
+  }
+  @keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+  30%, 60% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+  @keyframes gradient {
+  to {
+    background-position: var(--bg-size, 300%) 0;
+    }
+  }
+  @keyframes grid {
+  0% {
+    transform: translateY(-50%);
+    }
+  100% {
+    transform: translateY(0);
+    }
+  }
+  @keyframes ripple {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+    }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+    }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+    }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+    }
   }
 }

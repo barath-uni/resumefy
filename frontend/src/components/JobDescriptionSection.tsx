@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/button'
 import { Briefcase, Plus, Loader2, FileText, Download, Eye, AlertCircle } from 'lucide-react'
+import TemplatePicker from './TemplatePicker'
 
 interface Job {
   id: string
@@ -278,43 +279,12 @@ function JobCard({ job, onGeneratePDF }: { job: Job; onGeneratePDF: (jobId: stri
       </div>
 
       {job.generation_status === 'pending' && (
-        <>
-          <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Pick a template:</p>
-            <div className="grid grid-cols-3 gap-3">
-              {['A', 'B', 'C'].map((template) => (
-                <button
-                  key={template}
-                  onClick={() => setSelectedTemplate(template)}
-                  className={`p-4 border-2 rounded-lg transition-all ${
-                    selectedTemplate === template
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-center">
-                    <FileText className={`w-8 h-8 mx-auto mb-2 ${
-                      selectedTemplate === template ? 'text-emerald-600' : 'text-gray-400'
-                    }`} />
-                    <p className="text-sm font-medium">Template {template}</p>
-                    <p className="text-xs text-gray-500">
-                      {template === 'A' && 'Single Column'}
-                      {template === 'B' && 'Two Column'}
-                      {template === 'C' && 'Modern Color'}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button
-            onClick={() => onGeneratePDF(job.id, selectedTemplate)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg font-medium border-0"
-          >
-            🎨 Start Tailoring (Template {selectedTemplate})
-          </Button>
-        </>
+        <TemplatePicker
+          selectedTemplateId={selectedTemplate}
+          onTemplateSelect={setSelectedTemplate}
+          onConfirm={() => onGeneratePDF(job.id, selectedTemplate)}
+          isGenerating={false}
+        />
       )}
 
       {job.generation_status === 'generating' && (
