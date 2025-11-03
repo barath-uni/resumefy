@@ -42,7 +42,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     },
     {
       title: "Billing",
-      url: "/app/billing",
+      url: "/app/billing-details",
       icon: CreditCard,
     },
   ]

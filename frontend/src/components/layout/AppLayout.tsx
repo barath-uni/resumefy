@@ -4,7 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { Ripple } from '../ui/ripple'
 import { RetroGrid } from '../ui/retro-grid'
 import { AnimatedShinyText } from '../ui/animated-shiny-text'
+import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
+import { Crown, Zap } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { getUserTier } from '../../lib/paywall'
 import { AppSidebar } from '../app-sidebar'
 import { SidebarInset, SidebarProvider } from '../ui/sidebar'
 
@@ -14,6 +18,8 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [user, setUser] = useState<{ name: string; email: string; avatar?: string }>()
+  const [userId, setUserId] = useState<string>()
+  const [currentTier, setCurrentTier] = useState<string>('free')
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -31,6 +37,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         email: session.user.email || '',
         avatar: session.user.user_metadata?.avatar_url,
       })
+      setUserId(session.user.id)
+
+      // Get user tier
+      const tierInfo = await getUserTier(session.user.id)
+      setCurrentTier(tierInfo.tier)
+
       setIsLoading(false)
     }
 
@@ -72,7 +84,43 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider>
       <AppSidebar user={user} />
       <SidebarInset>
-        {children}
+        {/* Top Bar */}
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
+          <div className="flex-1"></div>
+          <div className="flex items-center gap-3">
+            {/* Tier Badge */}
+            <Badge
+              variant="outline"
+              className={
+                currentTier === 'max'
+                  ? 'border-purple-500 text-purple-700 dark:text-purple-400'
+                  : currentTier === 'pro'
+                  ? 'border-blue-500 text-blue-700 dark:text-blue-400'
+                  : 'border-gray-300 text-gray-600 dark:text-gray-400'
+              }
+            >
+              {currentTier === 'max' && <Crown className="w-3 h-3 mr-1" />}
+              {currentTier === 'pro' && <Zap className="w-3 h-3 mr-1" />}
+              {currentTier.toUpperCase()}
+            </Badge>
+
+            {/* Upgrade Button (only show for free tier) */}
+            {currentTier === 'free' && (
+              <Button
+                size="sm"
+                onClick={() => navigate('/app/billing')}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                Upgrade
+              </Button>
+            )}
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div>
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

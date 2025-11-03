@@ -6,6 +6,8 @@ import MyResumesPage from "./pages/MyResumesPage"
 import TailorResumePage from "./pages/TailorResumePage"
 import TailoringPage from "./pages/TailoringPage"
 import BillingPage from "./pages/BillingPage"
+import BillingDetailsPage from "./pages/BillingDetailsPage"
+import PaymentSuccessPage from "./pages/PaymentSuccessPage"
 import Landing from "./pages/Landing"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
@@ -121,6 +123,18 @@ function App() {
         <Route
           path="/app/billing"
           element={<BillingPage />}
+        />
+        <Route
+          path="/app/billing-details"
+          element={
+            <AppLayout>
+              <BillingDetailsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/billing/success"
+          element={<PaymentSuccessPage />}
         />
 
         {/* Static Pages */}

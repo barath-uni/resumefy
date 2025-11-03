@@ -42,7 +42,7 @@ export function PaywallModal({
       title: 'Resume Upload Limit Reached',
       body: message || `You've reached your resume limit (${current}/${limit}). Upgrade to upload more resumes.`,
       features: [
-        'Upload up to 10 resumes (Basic) or 50 resumes (Pro)',
+        'Upload up to 10 resumes (Pro) or 50 resumes (Max)',
         'Organize multiple resume versions',
         'Quick access to all your resumes'
       ],
@@ -53,7 +53,7 @@ export function PaywallModal({
       title: 'Job Description Limit Reached',
       body: message || `You've reached your job limit (${current}/${limit}) for this resume. Upgrade to add more job descriptions.`,
       features: [
-        'Add up to 50 jobs (Basic) or 250 jobs (Pro)',
+        'Add up to 50 jobs (Pro) or 250 jobs (Max)',
         'Tailor your resume for each opportunity',
         'Track all your applications'
       ],
@@ -62,7 +62,7 @@ export function PaywallModal({
     pdf_generation: {
       icon: Sparkles,
       title: 'Unlock PDF Generation',
-      body: message || 'Generate unlimited tailored resume PDFs with Basic or Pro plan.',
+      body: message || 'Generate unlimited tailored resume PDFs with Pro or Max plan.',
       features: [
         'Unlimited PDF generation',
         'Download in multiple formats',
