@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase'
 import { getUserResumes } from '../lib/uploadResume'
 import { extractResumeText } from '../lib/parseResume'
 import { analytics } from '../lib/analytics'
+import { typography } from '../lib/typography'
 import ResumeUpload from '../components/ResumeUpload'
 
 export default function DashboardPage() {
@@ -77,8 +78,8 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card/50">
         <div className="max-w-7xl mx-auto px-8 py-12">
-          <h1 className="text-5xl font-bold text-foreground mb-3 tracking-tight">Hi {userName}!</h1>
-          <p className="text-muted-foreground text-xl font-normal">What is your goal today?</p>
+          <h1 className={typography.h1 + " mb-3"}>Hi {userName}!</h1>
+          <p className={typography.lead}>What is your goal today?</p>
           <div className="flex gap-3 mt-8">
             <Button variant="default" size="lg" className="rounded-full font-semibold shadow-sm">Resume building</Button>
           </div>
@@ -117,8 +118,8 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20 font-medium px-3 py-1">Resume building</Badge>
-                  <CardTitle className="text-2xl mb-3 font-bold leading-tight">{currentResume ? "You are almost in the top 10 percent" : "Lets build your resume"}</CardTitle>
-                  <CardDescription className="text-base leading-relaxed">{currentResume ? 'Great work. Your resume is strong! Add one more element for the perfect score.' : 'Upload your resume to get started with AI-powered optimization'}</CardDescription>
+                  <CardTitle className={typography.h3 + " mb-3"}>{currentResume ? "You are almost in the top 10 percent" : "Lets build your resume"}</CardTitle>
+                  <CardDescription className="leading-relaxed">{currentResume ? 'Great work. Your resume is strong! Add one more element for the perfect score.' : 'Upload your resume to get started with AI-powered optimization'}</CardDescription>
                 </div>
                 {currentResume && (
                   <div className="flex flex-col items-center ml-4">
@@ -172,8 +173,8 @@ export default function DashboardPage() {
                     <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-6 flex items-center justify-center border-2 border-border">
                       <Upload className="w-10 h-10 text-muted-foreground" strokeWidth={2} />
                     </div>
-                    <h3 className="font-bold text-foreground mb-3 text-xl">No resume uploaded yet</h3>
-                    <p className="text-base text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">Upload your resume to get your personalized score and AI-powered recommendations</p>
+                    <h3 className={typography.h4 + " mb-3"}>No resume uploaded yet</h3>
+                    <p className={typography.muted + " mb-8 max-w-md mx-auto"}>Upload your resume to get your personalized score and AI-powered recommendations</p>
                     <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
                       <DialogTrigger asChild>
                         <ShimmerButton className="h-14 px-8 text-base font-semibold shadow-lg">

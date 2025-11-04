@@ -93,10 +93,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
               variant="outline"
               className={
                 currentTier === 'max'
-                  ? 'border-purple-500 text-purple-700 dark:text-purple-400'
+                  ? 'border-primary text-primary'
                   : currentTier === 'pro'
-                  ? 'border-blue-500 text-blue-700 dark:text-blue-400'
-                  : 'border-gray-300 text-gray-600 dark:text-gray-400'
+                  ? 'border-primary text-primary'
+                  : 'border-muted-foreground text-muted-foreground'
               }
             >
               {currentTier === 'max' && <Crown className="w-3 h-3 mr-1" />}
@@ -109,7 +109,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <Button
                 size="sm"
                 onClick={() => navigate('/app/billing')}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 Upgrade
               </Button>

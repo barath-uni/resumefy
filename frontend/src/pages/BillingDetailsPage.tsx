@@ -5,6 +5,7 @@ import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
+import { typography } from '../lib/typography'
 import { Calendar, Mail, Crown, Zap, CreditCard, ArrowRight } from 'lucide-react'
 
 interface SubscriptionData {
@@ -69,22 +70,20 @@ export default function BillingDetailsPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Billing & Subscription</h1>
-          <p className="text-muted-foreground">Manage your subscription and billing details</p>
+          <h1 className={typography.h2 + " mb-2"}>Billing & Subscription</h1>
+          <p className={typography.muted}>Manage your subscription and billing details</p>
         </div>
 
         {/* Current Subscription Card */}
         <Card className="mb-6 p-6 border-2">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold text-foreground mb-2">Current Plan</h2>
+              <h2 className={typography.h3 + " mb-2"}>Current Plan</h2>
               <Badge
                 className={
-                  subscriptionData.tier === 'max'
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                    : subscriptionData.tier === 'pro'
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                    : 'bg-gray-200 text-gray-700'
+                  subscriptionData.tier === 'free'
+                    ? 'bg-muted text-muted-foreground'
+                    : 'bg-primary text-primary-foreground'
                 }
               >
                 {subscriptionData.tier === 'max' && <Crown className="w-3 h-3 mr-1" />}
@@ -97,8 +96,8 @@ export default function BillingDetailsPage() {
                 variant="outline"
                 className={
                   subscriptionData.subscription_status === 'active'
-                    ? 'border-green-500 text-green-700 dark:text-green-400'
-                    : 'border-yellow-500 text-yellow-700 dark:text-yellow-400'
+                    ? 'border-primary text-primary'
+                    : 'border-destructive text-destructive'
                 }
               >
                 {subscriptionData.subscription_status.toUpperCase()}
@@ -159,7 +158,7 @@ export default function BillingDetailsPage() {
 
         {/* Upgrade CTA for Free Users */}
         {subscriptionData.tier === 'free' && (
-          <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-blue-200 dark:border-blue-800">
+          <Card className="p-6 bg-muted border-2">
             <div className="text-center">
               <h3 className="text-lg font-bold text-foreground mb-2">You're on the Free Plan</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -168,7 +167,6 @@ export default function BillingDetailsPage() {
               <Button
                 size="lg"
                 onClick={() => navigate('/app/billing')}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 View Plans & Upgrade
                 <ArrowRight className="w-4 h-4 ml-2" />

@@ -78,19 +78,14 @@ Deno.serve(async (request) => {
 
         console.log('👤 Found user:', user.id)
 
-        // Determine tier from price ID
-        const priceId = session.line_items?.data[0]?.price?.id
-        const proPriceId = Deno.env.get('STRIPE_PRICE_ID_PRO')
-        const maxPriceId = Deno.env.get('STRIPE_PRICE_ID_MAX')
+        // Get tier from session metadata (more reliable than line_items)
+        const tier = session.metadata?.tier || 'free'
 
-        let tier = 'free'
-        if (priceId === proPriceId) {
-          tier = 'pro'
-        } else if (priceId === maxPriceId) {
-          tier = 'max'
+        if (tier === 'free') {
+          console.error('⚠️ No tier in metadata, check create-checkout-session')
         }
 
-        console.log('🎯 Upgrading user to tier:', tier)
+        console.log('🎯 Upgrading user to tier:', tier, '(from metadata)')
 
         // Update user profile
         const { error: updateError } = await supabase
@@ -132,13 +127,26 @@ Deno.serve(async (request) => {
 
         console.log('👤 Updating subscription for user:', profile.user_id)
 
+        // Parse the period end date safely
+        let periodEnd = null
+        try {
+          if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+            periodEnd = new Date(subscription.current_period_end * 1000).toISOString()
+            console.log('📅 Period end:', periodEnd)
+          } else {
+            console.log('⚠️ No valid current_period_end:', subscription.current_period_end)
+          }
+        } catch (err) {
+          console.error('❌ Error parsing period end:', err, 'Value:', subscription.current_period_end)
+        }
+
         // Update subscription status
         const { error: updateError } = await supabase
           .from('user_profiles')
           .update({
             stripe_subscription_id: subscription.id,
             subscription_status: subscription.status,
-            subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+            subscription_current_period_end: periodEnd
           })
           .eq('user_id', profile.user_id)
 
