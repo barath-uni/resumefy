@@ -2,6 +2,7 @@ import {
   ChevronsUpDown,
   CreditCard,
   LogOut,
+  HelpCircle,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -100,6 +101,10 @@ export function NavUser({
               <DropdownMenuItem onClick={() => navigate('/app/billing')}>
                 <CreditCard />
                 Billing
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/support')}>
+                <HelpCircle />
+                Support
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
