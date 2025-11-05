@@ -28,7 +28,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const navigate = useNavigate()
   const [tailorUrl, setTailorUrl] = React.useState("/app/tailor-resume")
 
-  // Smart navigation: fetch user's first resume and go directly to tailoring
+  // Smart navigation: fetch user's first resume and go directly to generated resumes history
   React.useEffect(() => {
     const loadFirstResume = async () => {
       try {
@@ -37,8 +37,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
 
         const resumes = await getUserResumes(session.user.id)
         if (resumes && resumes.length > 0) {
-          // If user has resumes, navigate directly to tailoring page
-          setTailorUrl(`/app/tailor/${resumes[0].id}`)
+          // If user has resumes, navigate to generated resumes page (history)
+          setTailorUrl(`/app/generated-resumes/${resumes[0].id}`)
         }
       } catch (error) {
         console.error('Error loading resumes for sidebar:', error)
