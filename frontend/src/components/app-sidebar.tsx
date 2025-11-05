@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Home, FileText, CreditCard, Sparkles } from "lucide-react"
+import { Home, FileText, CreditCard, Sparkles, HelpCircle } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { getUserResumes } from "@/lib/uploadResume"
@@ -69,6 +69,11 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       title: "Billing",
       url: "/app/billing-details",
       icon: CreditCard,
+    },
+    {
+      title: "Support",
+      url: "/support",
+      icon: HelpCircle,
     },
   ]
 
