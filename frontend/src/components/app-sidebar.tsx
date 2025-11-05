@@ -77,9 +77,11 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarHeader className="relative overflow-hidden">
         <GridPattern className="opacity-10" width={30} height={30} />
         <Link to="/app/dashboard" className="flex items-center gap-2 px-2 relative z-10">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">R</span>
-          </div>
+          <img
+            src="/icons/logo-500.png"
+            alt="Resumefy Logo"
+            className="w-8 h-8"
+          />
           <AnimatedGradientText
             className="text-xl font-semibold"
             colorFrom="#4CAF50"
