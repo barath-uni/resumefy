@@ -1,6 +1,8 @@
 import * as React from "react"
 import { Home, FileText, CreditCard, Sparkles } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { supabase } from "@/lib/supabase"
+import { getUserResumes } from "@/lib/uploadResume"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -23,6 +25,29 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  const navigate = useNavigate()
+  const [tailorUrl, setTailorUrl] = React.useState("/app/tailor-resume")
+
+  // Smart navigation: fetch user's first resume and go directly to tailoring
+  React.useEffect(() => {
+    const loadFirstResume = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) return
+
+        const resumes = await getUserResumes(session.user.id)
+        if (resumes && resumes.length > 0) {
+          // If user has resumes, navigate directly to tailoring page
+          setTailorUrl(`/app/tailor/${resumes[0].id}`)
+        }
+      } catch (error) {
+        console.error('Error loading resumes for sidebar:', error)
+      }
+    }
+
+    loadFirstResume()
+  }, [])
+
   const navItems = [
     {
       title: "Dashboard",
@@ -37,7 +62,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     },
     {
       title: "Tailor Resume",
-      url: "/app/tailor-resume",
+      url: tailorUrl,
       icon: Sparkles,
     },
     {

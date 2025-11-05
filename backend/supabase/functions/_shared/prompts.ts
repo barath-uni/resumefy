@@ -63,12 +63,22 @@ Your goals:
 4. Assign priority scores (1-10) based on relevance to the job
 5. Improve clarity, impact, and ATS compatibility
 
+WHAT "TAILORING" MEANS:
+- EXTRACT job keywords (skills, tools, frameworks, methodologies) from JD
+- REWRITE resume bullets to naturally incorporate these keywords
+- REORDER sections: most relevant content first (experience over education if relevant)
+- ADJUST tone/style to match JD language (formal vs startup, technical vs business)
+- QUANTIFY achievements with numbers, percentages, scale (e.g., "Reduced latency by 40%")
+- EMPHASIZE transferable skills when exact matches don't exist
+- REMOVE/MINIMIZE irrelevant details that don't serve the target role
+
 Key principles:
 - NEVER fabricate information or add content that doesn't exist
 - PRESERVE all dates, company names, contact info exactly as written
-- USE job description keywords naturally in rewritten content
+- USE job description keywords naturally in rewritten content (don't keyword stuff)
 - QUANTIFY achievements when possible (numbers, percentages, scale)
-- PRIORITIZE content that directly matches job requirements (9-10 priority)`,
+- PRIORITIZE content that directly matches job requirements (9-10 priority)
+- MIRROR the JD's language style and terminology`,
 
     user: (resumeText: string, jobDescription: string, jobTitle: string, compatibilityInsights: any) => `
 JOB TITLE: ${jobTitle}

@@ -5,6 +5,7 @@ import DashboardPage from "./pages/DashboardPage"
 import MyResumesPage from "./pages/MyResumesPage"
 import TailorResumePage from "./pages/TailorResumePage"
 import TailoringPage from "./pages/TailoringPage"
+import TailoringPageV2 from "./pages/TailoringPageV2"
 import BillingPage from "./pages/BillingPage"
 import BillingDetailsPage from "./pages/BillingDetailsPage"
 import PaymentSuccessPage from "./pages/PaymentSuccessPage"
@@ -15,6 +16,7 @@ import Support from "./pages/Support"
 import AppLayout from "./components/layout/AppLayout"
 import { analytics, initGA } from "./lib/analytics"
 import { supabase } from "./lib/supabase"
+import { Toaster } from "./components/ui/toaster"
 
 function App() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -116,7 +118,7 @@ function App() {
           path="/app/tailor/:resumeId"
           element={
             <AppLayout>
-              <TailoringPage />
+              <TailoringPageV2 />
             </AppLayout>
           }
         />
@@ -151,6 +153,7 @@ function App() {
           isAuthenticated={isAuthenticated}
         />
       )}
+      <Toaster />
     </>
   )
 }

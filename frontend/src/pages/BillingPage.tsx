@@ -239,15 +239,19 @@ export default function BillingPage() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Upload up to <strong>10 resumes</strong></span>
+                <span>Upload up to <strong>3 resumes</strong></span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span><strong>50 job descriptions</strong> per resume</span>
+                <span><strong>25 job descriptions</strong> per resume (75 total)</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <span><strong>Unlimited PDF generation</strong></span>
+              </li>
+              <li className="flex items-start gap-2 text-sm">
+                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Bulk generate up to <strong>25 resumes</strong> at once</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -307,15 +311,19 @@ export default function BillingPage() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Upload up to <strong>50 resumes</strong></span>
+                <span>Upload up to <strong>10 resumes</strong></span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span><strong>250 job descriptions</strong> per resume</span>
+                <span><strong>100 job descriptions</strong> per resume (1,000 total)</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <span><strong>Unlimited PDF generation</strong></span>
+              </li>
+              <li className="flex items-start gap-2 text-sm">
+                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <span>Bulk generate up to <strong>100 resumes</strong> at once</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
