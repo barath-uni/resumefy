@@ -4,8 +4,8 @@ import UploadModal from "./components/UploadModal"
 import DashboardPage from "./pages/DashboardPage"
 import MyResumesPage from "./pages/MyResumesPage"
 import TailorResumePage from "./pages/TailorResumePage"
-import TailoringPage from "./pages/TailoringPage"
 import TailoringPageV2 from "./pages/TailoringPageV2"
+import GeneratedResumesPage from "./pages/GeneratedResumesPage"
 import BillingPage from "./pages/BillingPage"
 import BillingDetailsPage from "./pages/BillingDetailsPage"
 import PaymentSuccessPage from "./pages/PaymentSuccessPage"
@@ -119,6 +119,14 @@ function App() {
           element={
             <AppLayout>
               <TailoringPageV2 />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/generated-resumes/:resumeId"
+          element={
+            <AppLayout>
+              <GeneratedResumesPage />
             </AppLayout>
           }
         />

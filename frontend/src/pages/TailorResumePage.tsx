@@ -47,7 +47,7 @@ export default function TailorResumePage() {
 
   const handleStartTailoring = () => {
     if (selectedResumeId) {
-      navigate(`/app/tailor/${selectedResumeId}`)
+      navigate(`/app/generated-resumes/${selectedResumeId}`)
     }
   }
 
