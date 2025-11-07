@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Plus, Lock, Trash2, Eye, Upload as UploadIcon } from 'lucide-react'
+import { FileText, Plus, Lock, Trash2, Eye, Upload as UploadIcon, Sparkles, X } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
@@ -8,12 +8,15 @@ import { supabase } from '../lib/supabase'
 import { getUserResumes } from '../lib/uploadResume'
 import { useNavigate } from 'react-router-dom'
 import ResumeUpload from '../components/ResumeUpload'
+import { getUserTier } from '../lib/paywall'
 
 export default function MyResumesPage() {
   const [user, setUser] = useState<any>(null)
   const [resumes, setResumes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
+  const [userTier, setUserTier] = useState<{ tier: string; resumes_limit: number }>({ tier: 'free', resumes_limit: 1 })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -22,6 +25,10 @@ export default function MyResumesPage() {
 
       if (session?.user) {
         setUser(session.user)
+
+        // Load user's tier info
+        const tierInfo = await getUserTier(session.user.id)
+        setUserTier({ tier: tierInfo.tier, resumes_limit: tierInfo.resumes_limit })
 
         // Load user's resumes
         const userResumes = await getUserResumes(session.user.id)
@@ -36,7 +43,7 @@ export default function MyResumesPage() {
   }, [])
 
   const handleView = (resumeUrl: string) => {
-    window.open(resumeUrl, '_blank')
+    setPdfPreviewUrl(resumeUrl)
   }
 
   const handleDelete = async (resumeId: string, e: React.MouseEvent) => {
@@ -114,28 +121,30 @@ export default function MyResumesPage() {
                     </p>
                   </div>
 
-                  {/* Paywall Overlay - Free tier limit */}
-                  {resumes.length >= 1 && (
+                  {/* Paywall Overlay - Resume limit based on tier */}
+                  {resumes.length >= userTier.resumes_limit && (
                     <div className="absolute inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center z-10">
                       <div className="text-center p-4">
-                        <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Lock className="w-6 h-6 text-amber-600" />
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Sparkles className="w-6 h-6 text-primary" />
                         </div>
                         <h4 className="font-semibold text-foreground text-sm mb-1">
-                          Upgrade to Pro
+                          Upload more resumes
                         </h4>
                         <p className="text-xs text-muted-foreground mb-3 max-w-[180px] mx-auto leading-relaxed">
-                          Free tier allows 1 resume. Upgrade for unlimited resumes
+                          {userTier.tier === 'free'
+                            ? 'Free tier: 1 resume. Upgrade for more'
+                            : `${userTier.tier.toUpperCase()}: ${userTier.resumes_limit} resumes max`}
                         </p>
                         <Button
                           size="sm"
-                          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm h-8 text-xs"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-8 text-xs"
                           onClick={(e) => {
                             e.stopPropagation()
                             navigate('/app/billing')
                           }}
                         >
-                          Upgrade Now
+                          {userTier.tier === 'free' ? 'Upgrade' : userTier.tier === 'pro' ? 'Upgrade to Max' : 'View Plans'}
                         </Button>
                       </div>
                     </div>
@@ -162,47 +171,62 @@ export default function MyResumesPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: (index + 1) * 0.05 }}
             >
-              <Card className="overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-200 group h-full">
-                {/* Resume Preview Thumbnail */}
-                <div className="bg-muted/30 p-4 border-b border-border relative aspect-[8.5/11]">
-                  <div className="absolute inset-3 bg-card rounded shadow-sm flex items-center justify-center border border-border/50">
-                    <FileText className="w-12 h-12 text-muted-foreground/30" strokeWidth={1.5} />
+              <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group h-full border-2 hover:border-primary/30 cursor-pointer relative">
+                {/* Resume Preview Thumbnail - Clickable */}
+                <div
+                  className="bg-gradient-to-br from-muted/50 to-muted/30 p-4 border-b border-border relative aspect-[8.5/11] group-hover:from-primary/5 group-hover:to-primary/10 transition-all"
+                  onClick={() => handleView(resume.file_url)}
+                >
+                  {/* PDF Preview (if possible) or Icon */}
+                  <div className="absolute inset-3 bg-card rounded shadow-md flex items-center justify-center border border-border/50 overflow-hidden group-hover:shadow-lg transition-shadow">
+                    {resume.file_url ? (
+                      <iframe
+                        src={`${resume.file_url}#toolbar=0&navpanes=0&scrollbar=0`}
+                        className="w-full h-full pointer-events-none scale-[1.1]"
+                        title={`Preview ${resume.file_name}`}
+                      />
+                    ) : (
+                      <FileText className="w-12 h-12 text-muted-foreground/30 group-hover:text-primary/40 transition-colors" strokeWidth={1.5} />
+                    )}
+                  </div>
+
+                  {/* Overlay on hover with action icons */}
+                  <div className="absolute inset-3 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 rounded">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleView(resume.file_url)
+                      }}
+                      className="w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+                      title="View Resume"
+                    >
+                      <Eye className="w-5 h-5 text-gray-900" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(resume.id, e)
+                      }}
+                      className="w-10 h-10 bg-destructive/90 hover:bg-destructive rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+                      title="Delete Resume"
+                    >
+                      <Trash2 className="w-5 h-5 text-white" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Resume Info & Actions */}
-                <div className="p-3">
-                  <h3 className="font-medium text-foreground text-sm truncate mb-0.5">
+                {/* Resume Info */}
+                <div className="p-4">
+                  <h3 className="font-semibold text-foreground text-sm truncate mb-1">
                     {resume.file_name?.replace(/\.[^/.]+$/, '') || 'My Resume'}
                   </h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {new Date(resume.created_at).toLocaleDateString('en-US', {
+                  <p className="text-xs text-muted-foreground">
+                    Uploaded {new Date(resume.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric'
                     })}
                   </p>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-8 text-xs"
-                      onClick={() => handleView(resume.file_url)}
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => handleDelete(resume.id, e)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
                 </div>
               </Card>
             </motion.div>
@@ -210,6 +234,47 @@ export default function MyResumesPage() {
 
         </div>
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreviewUrl && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 z-50"
+          onClick={() => setPdfPreviewUrl(null)}
+        >
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Resume Preview</h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(pdfPreviewUrl, '_blank')}
+                >
+                  Open in New Tab
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPdfPreviewUrl(null)}
+                  className="rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Modal Body - PDF Viewer */}
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`${pdfPreviewUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+                className="w-full h-full"
+                title="Resume Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

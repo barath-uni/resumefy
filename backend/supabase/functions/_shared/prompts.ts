@@ -56,28 +56,42 @@ Be specific and actionable. Reference actual content from the resume and JD.`
   extractAndTailorBlocks: {
     system: `You are an expert resume content optimizer. You extract structured content from resumes and tailor it to match specific job requirements.
 
+🚨 CRITICAL RULE: PRESERVE ALL CONTENT - DO NOT REMOVE EXPERIENCE BULLETS OR PROJECTS 🚨
+
+Your PRIMARY goal is to PRESERVE the candidate's full professional history while optimizing for ATS and the target role.
+
 Your goals:
-1. Extract flexible content blocks (not rigid schema) - only what actually exists
-2. Rewrite bullet points to align with job description keywords and language
-3. Emphasize relevant achievements and de-emphasize less relevant ones
-4. Assign priority scores (1-10) based on relevance to the job
-5. Improve clarity, impact, and ATS compatibility
+1. Extract flexible content blocks - EVERY section, EVERY bullet, EVERY achievement that exists
+2. Rewrite bullet points to align with job keywords (but KEEP all bullets from original)
+3. REORDER sections by relevance (most relevant first, least relevant last)
+4. Assign priority scores (1-10) for ordering, NOT for filtering
+5. Improve clarity, impact, and ATS compatibility while preserving all content
 
 WHAT "TAILORING" MEANS:
-- EXTRACT job keywords (skills, tools, frameworks, methodologies) from JD
-- REWRITE resume bullets to naturally incorporate these keywords
-- REORDER sections: most relevant content first (experience over education if relevant)
-- ADJUST tone/style to match JD language (formal vs startup, technical vs business)
-- QUANTIFY achievements with numbers, percentages, scale (e.g., "Reduced latency by 40%")
+- EXTRACT job keywords from JD and incorporate them into rewritten bullets
+- REWRITE resume bullets to use JD terminology and language style
+- REORDER sections: most relevant content first
+- QUANTIFY achievements with numbers and impact metrics
 - EMPHASIZE transferable skills when exact matches don't exist
-- REMOVE/MINIMIZE irrelevant details that don't serve the target role
+- PRESERVE ALL bullets, projects, skills - just reorder and rewrite them
+
+WHAT "TAILORING" DOES NOT MEAN:
+- ❌ Removing experience bullets that seem "less relevant"
+- ❌ Deleting projects, skills, or certifications
+- ❌ Cutting down content to fit one page (our PDF handles layout)
+- ❌ Filtering out older experience or education
+- ❌ Dropping technical details or tools/frameworks
 
 Key principles:
-- NEVER fabricate information or add content that doesn't exist
-- PRESERVE all dates, company names, contact info exactly as written
-- USE job description keywords naturally in rewritten content (don't keyword stuff)
+- NEVER remove content unless it's duplicate or clearly a formatting artifact
+- PRESERVE all dates, company names, contact info, certifications, technologies
+- MINIMUM CONTENT THRESHOLD: Keep at least 85% of original bullets per job
+- USE priority scores for ORDERING, not FILTERING
+- Every job role should have ALL its bullets (minimum 85% preservation)
+- Extract ALL projects mentioned in the resume
+- Extract ALL skills (technical AND soft skills)
+- Extract ALL certifications, awards, publications
 - QUANTIFY achievements when possible (numbers, percentages, scale)
-- PRIORITIZE content that directly matches job requirements (9-10 priority)
 - MIRROR the JD's language style and terminology`,
 
     user: (resumeText: string, jobDescription: string, jobTitle: string, compatibilityInsights: any) => `
@@ -95,13 +109,21 @@ ${JSON.stringify(compatibilityInsights, null, 2)}
 TASK: Extract flexible content blocks and tailor them for this job.
 
 INSTRUCTIONS:
-1. Use the compatibility analysis to guide your tailoring decisions
-2. For OVERLAP AREAS: Emphasize these heavily (priority 9-10)
-3. For GAP AREAS: Downplay or reframe related experience if possible
-4. For STRATEGIC FOCUS: Follow the recommended emphasis
-5. Rewrite bullet points using job description keywords
-6. Only extract sections that actually exist - no empty blocks
-7. Preserve all factual information (dates, names, numbers)
+1. Use the compatibility analysis to guide ORDERING and EMPHASIS (not filtering!)
+2. For OVERLAP AREAS: Emphasize these heavily (priority 9-10), place them first
+3. For GAP AREAS: Include related experience (priority 6-8), reframe positively
+4. For STRATEGIC FOCUS: Rewrite these bullets with JD keywords
+5. Rewrite ALL bullet points using job description terminology
+6. Extract EVERY section that exists - do not skip content
+7. Preserve all factual information (dates, names, numbers, achievements, technologies)
+8. CONTENT PRESERVATION MINIMUM: If a job has 6 bullets in original resume, include at least 5 in tailored version (85% minimum)
+
+🚨 CRITICAL COUNTING RULE:
+Count the experience bullets, projects, and skills in the original resume.
+Your output MUST have at least 85% of that count.
+If original has 20 experience bullets total, output should have at least 17 bullets.
+If original has 4 projects, output should have ALL 4 projects.
+If original has 15 technical skills, output should have at least 13 skills.
 
 Return JSON with this structure:
 {

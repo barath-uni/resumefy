@@ -70,10 +70,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Verify user owns this resume
+    // Verify user owns this resume AND get all resume data
     const { data: resume, error: resumeError } = await supabase
       .from('resumes')
-      .select('user_id')
+      .select('user_id, raw_text, file_url, parsing_status')
       .eq('id', resumeId)
       .single()
 
@@ -86,6 +86,47 @@ Deno.serve(async (req) => {
     }
 
     const userId = resume.user_id
+
+    // ============================
+    // CRITICAL: Ensure resume text is extracted BEFORE generation
+    // ============================
+    if (!resume.raw_text || resume.parsing_status !== 'completed') {
+      console.log('⚠️ [bulk-generate] Resume text not extracted, triggering parse-resume...')
+      console.log('📊 [bulk-generate] Current status:', resume.parsing_status, 'raw_text length:', resume.raw_text?.length || 0)
+
+      if (!resume.file_url) {
+        console.error('❌ [bulk-generate] Resume file_url missing, cannot extract text')
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Resume file not found. Please re-upload your resume.'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const { data: parseResult, error: parseError } = await supabase.functions.invoke('parse-resume', {
+        body: {
+          resumeId: resumeId,
+          fileUrl: resume.file_url
+        }
+      })
+
+      if (parseError || !parseResult?.success) {
+        console.error('❌ [bulk-generate] Failed to extract resume text:', parseError)
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Failed to extract resume text. Please try again or re-upload your resume.'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log('✅ [bulk-generate] Resume text extracted successfully:', parseResult.wordCount, 'words')
+    } else {
+      console.log('✅ [bulk-generate] Resume text already extracted:', resume.raw_text.length, 'characters')
+    }
 
     // ============================
     // PAYWALL CHECK - Check if user can add these many jobs

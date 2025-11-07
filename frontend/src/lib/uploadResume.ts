@@ -64,12 +64,24 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
       }
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    // Get signed URL (valid for 1 year) - bucket is private, not public!
+    const { data: urlData, error: urlError } = await supabase.storage
       .from('resume')
-      .getPublicUrl(uploadData.path)
+      .createSignedUrl(uploadData.path, 31536000) // 1 year = 365 days * 24 hours * 60 mins * 60 secs
 
-    console.log('🔗 Public URL:', publicUrl)
+    if (urlError || !urlData) {
+      console.error('❌ Failed to create signed URL:', urlError)
+      // Clean up uploaded file
+      await supabase.storage.from('resume').remove([uploadData.path])
+      return {
+        success: false,
+        error: 'Failed to create file URL. Please try again.'
+      }
+    }
+
+    const signedUrl = urlData.signedUrl
+
+    console.log('🔗 Signed URL created:', signedUrl)
     console.log('💾 Creating database record...')
 
     // Create database record
@@ -77,7 +89,7 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
       .from('resumes')
       .insert({
         user_id: userId,
-        file_url: publicUrl,
+        file_url: signedUrl,
         file_name: file.name,
         file_size: file.size,
         parsing_status: 'pending'
@@ -97,12 +109,12 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
       }
     }
 
-    console.log('✅ Upload complete!', { resumeId: resumeData.id, fileUrl: publicUrl })
+    console.log('✅ Upload complete!', { resumeId: resumeData.id, fileUrl: signedUrl })
 
     return {
       success: true,
       resumeId: resumeData.id,
-      fileUrl: publicUrl
+      fileUrl: signedUrl
     }
 
   } catch (error) {

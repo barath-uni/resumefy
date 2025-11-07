@@ -147,9 +147,25 @@ export async function extractAndTailorBlocks(params: {
     true
   )
 
+  // VALIDATION: Check content preservation
+  const experienceBlocks = result.blocks?.filter(b => b.category === 'experience') || []
+  const totalBullets = experienceBlocks.reduce((sum, exp) => {
+    return sum + (exp.content.bullets?.length || 0)
+  }, 0)
+
+  const projectBlocks = result.blocks?.filter(b => b.category === 'projects') || []
+  const skillBlocks = result.blocks?.filter(b => b.category === 'skills') || []
+
+  if (totalBullets < 5) {
+    console.warn(`⚠️ [AI] Low bullet count detected: ${totalBullets}. Original resume may have been over-filtered.`)
+  }
+
   console.log('[AI] Step 2 complete:', {
     blockCount: result.blocks?.length || 0,
     categories: result.detectedCategories || [],
+    experienceBullets: totalBullets,
+    projects: projectBlocks.length,
+    skillCategories: skillBlocks.length
   })
 
   return result

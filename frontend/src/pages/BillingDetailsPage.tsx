@@ -5,8 +5,26 @@ import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select'
 import { typography } from '../lib/typography'
-import { Calendar, Mail, Crown, Zap, CreditCard, ArrowRight } from 'lucide-react'
+import { Calendar, Mail, Crown, Zap, CreditCard, ArrowRight, Loader2, AlertTriangle } from 'lucide-react'
+import { useToast } from '../hooks/use-toast'
 
 interface SubscriptionData {
   email?: string
@@ -14,6 +32,7 @@ interface SubscriptionData {
   subscription_status?: string
   subscription_current_period_end?: string
   stripe_customer_id?: string
+  stripe_subscription_id?: string
 }
 
 export default function BillingDetailsPage() {
@@ -21,6 +40,11 @@ export default function BillingDetailsPage() {
   const [userEmail, setUserEmail] = useState<string>('')
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({ tier: 'free' })
   const [loading, setLoading] = useState(true)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [selectedNewTier, setSelectedNewTier] = useState<'pro' | 'max'>('pro')
+  const [isSwitchingPlan, setIsSwitchingPlan] = useState(false)
+  const { toast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -37,7 +61,7 @@ export default function BillingDetailsPage() {
       // Get subscription data from user_profiles
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('tier, subscription_status, subscription_current_period_end, stripe_customer_id')
+        .select('tier, subscription_status, subscription_current_period_end, stripe_customer_id, stripe_subscription_id')
         .eq('user_id', session.user.id)
         .single()
 
@@ -47,7 +71,8 @@ export default function BillingDetailsPage() {
           tier: profile.tier || 'free',
           subscription_status: profile.subscription_status,
           subscription_current_period_end: profile.subscription_current_period_end,
-          stripe_customer_id: profile.stripe_customer_id
+          stripe_customer_id: profile.stripe_customer_id,
+          stripe_subscription_id: profile.stripe_subscription_id
         })
       }
 
@@ -57,6 +82,117 @@ export default function BillingDetailsPage() {
     loadUserData()
   }, [navigate])
 
+  const handleCancelSubscription = async () => {
+    if (!subscriptionData.stripe_subscription_id) {
+      toast({
+        title: "Error",
+        description: "No active subscription found",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsCancelling(true)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to cancel your subscription",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Call cancel-subscription edge function
+      const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+        body: { subscriptionId: subscriptionData.stripe_subscription_id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      })
+
+      if (error || !data?.success) {
+        console.error('❌ Cancel error:', error || data?.error)
+        toast({
+          title: "Failed to cancel subscription",
+          description: error?.message || data?.error || 'Unknown error',
+          variant: "destructive"
+        })
+        return
+      }
+
+      console.log('✅ Subscription cancelled successfully')
+
+      toast({
+        title: "Subscription cancelled",
+        description: "Your subscription will remain active until the end of the billing period",
+      })
+
+      // Reload page to refresh subscription data
+      window.location.reload()
+
+    } catch (err) {
+      console.error('❌ Unexpected error:', err)
+      toast({
+        title: "Unexpected error",
+        description: (err as Error).message,
+        variant: "destructive"
+      })
+    } finally {
+      setIsCancelling(false)
+      setCancelDialogOpen(false)
+    }
+  }
+
+  const handleSwitchPlan = async () => {
+    if (!userId) return
+
+    setIsSwitchingPlan(true)
+
+    try {
+      console.log('🔄 Switching plan to:', selectedNewTier)
+
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('No active session')
+      }
+
+      // Call Edge Function to create checkout session or update subscription
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { tier: selectedNewTier },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      })
+
+      if (error) {
+        console.error('❌ Error switching plan:', error)
+        throw error
+      }
+
+      if (!data.url) {
+        throw new Error('No checkout URL returned')
+      }
+
+      console.log('✅ Checkout session created, redirecting to Stripe...')
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url
+
+    } catch (error: any) {
+      console.error('❌ Switch plan error:', error)
+      toast({
+        title: "Failed to switch plan",
+        description: error.message || 'Failed to switch plan',
+        variant: "destructive"
+      })
+      setIsSwitchingPlan(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -64,6 +200,9 @@ export default function BillingDetailsPage() {
       </div>
     )
   }
+
+  const canUpgrade = subscriptionData.tier === 'free' || subscriptionData.tier === 'pro'
+  const isActive = subscriptionData.subscription_status === 'active'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
@@ -83,6 +222,8 @@ export default function BillingDetailsPage() {
                 className={
                   subscriptionData.tier === 'free'
                     ? 'bg-muted text-muted-foreground'
+                    : subscriptionData.tier === 'max'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500'
                     : 'bg-primary text-primary-foreground'
                 }
               >
@@ -154,21 +295,105 @@ export default function BillingDetailsPage() {
               </div>
             )}
           </div>
+
+          {/* Cancel Subscription Button (only for active paid users) */}
+          {subscriptionData.tier !== 'free' && isActive && (
+            <div className="mt-6 pt-6 border-t">
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50"
+                onClick={() => setCancelDialogOpen(true)}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Cancel Subscription'
+                )}
+              </Button>
+            </div>
+          )}
         </Card>
 
-        {/* Upgrade CTA for Free Users */}
+        {/* Plan Switcher (for active paid users who can upgrade) */}
+        {canUpgrade && (
+          <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-2">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  {subscriptionData.tier === 'free' ? 'Upgrade Your Plan' : 'Upgrade to Max'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {subscriptionData.tier === 'free'
+                    ? 'Unlock unlimited PDF generation and premium features'
+                    : 'Get access to priority support and advanced features'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Select
+                value={selectedNewTier}
+                onValueChange={(value) => setSelectedNewTier(value as 'pro' | 'max')}
+                disabled={isSwitchingPlan}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subscriptionData.tier === 'free' && (
+                    <SelectItem value="pro">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4" />
+                        <span>Pro - $8.99/mo</span>
+                      </div>
+                    </SelectItem>
+                  )}
+                  <SelectItem value="max">
+                    <div className="flex items-center gap-2">
+                      <Crown className="w-4 h-4" />
+                      <span>Max - $17.99/mo</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                onClick={handleSwitchPlan}
+                disabled={isSwitchingPlan}
+              >
+                {isSwitchingPlan ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {subscriptionData.tier === 'free' ? 'Upgrade Now' : 'Switch to ' + selectedNewTier.toUpperCase()}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Free tier CTA */}
         {subscriptionData.tier === 'free' && (
-          <Card className="p-6 bg-muted border-2">
+          <Card className="mt-6 p-6 bg-muted border-2">
             <div className="text-center">
-              <h3 className="text-lg font-bold text-foreground mb-2">You're on the Free Plan</h3>
+              <h3 className="text-lg font-bold text-foreground mb-2">Start with a Free Trial</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Upgrade to unlock unlimited PDF generation and premium features
+                Try Pro for free and upgrade anytime
               </p>
               <Button
                 size="lg"
                 onClick={() => navigate('/app/billing')}
               >
-                View Plans & Upgrade
+                View All Plans
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -199,11 +424,11 @@ export default function BillingDetailsPage() {
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>10 Resumes</span>
+                  <span>3 Resumes</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>50 Job Descriptions per Resume</span>
+                  <span>25 Job Descriptions per Resume</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -219,11 +444,11 @@ export default function BillingDetailsPage() {
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span>50 Resumes</span>
+                  <span>10 Resumes</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span>250 Job Descriptions per Resume</span>
+                  <span>100 Job Descriptions per Resume</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -231,13 +456,38 @@ export default function BillingDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Priority Support</span>
+                  <span>Priority Support (24h response)</span>
                 </div>
               </>
             )}
           </div>
         </Card>
       </div>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Cancel Subscription?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your subscription? You'll retain access until the end of your billing period ({subscriptionData.subscription_current_period_end ? new Date(subscriptionData.subscription_current_period_end).toLocaleDateString() : 'end of period'}), after which you'll be downgraded to the Free plan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Keep Subscription</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelSubscription}
+              disabled={isCancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
