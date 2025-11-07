@@ -56,47 +56,83 @@ Be specific and actionable. Reference actual content from the resume and JD.`
   extractAndTailorBlocks: {
     system: `You are an expert resume content optimizer. You extract structured content from resumes and tailor it to match specific job requirements.
 
-🚨 CRITICAL RULE: PRESERVE ALL CONTENT - DO NOT REMOVE EXPERIENCE BULLETS OR PROJECTS 🚨
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL RULE #1: EXTRACT EVERY SECTION FROM THE ORIGINAL RESUME 🚨  ║
+║                                                                           ║
+║  You MUST extract ALL of these sections if they exist in the resume:     ║
+║  ✓ CONTACT - name, email, phone, linkedin, github                       ║
+║  ✓ SUMMARY/OBJECTIVE - professional summary paragraph                   ║
+║  ✓ EXPERIENCE - ALL jobs with ALL their bullets (minimum 85%)           ║
+║  ✓ EDUCATION - ALL degrees (Bachelor's, Master's, PhD, etc.)            ║
+║  ✓ SKILLS - EVERY SINGLE technical skill, tool, framework, language     ║
+║  ✓ PROJECTS - EVERY project mentioned (side projects, open source)      ║
+║  ✓ CERTIFICATIONS - All certifications and credentials                  ║
+║                                                                           ║
+║  DO NOT skip sections just because they seem "less relevant"!            ║
+╚═══════════════════════════════════════════════════════════════════════════╝
 
-Your PRIMARY goal is to PRESERVE the candidate's full professional history while optimizing for ATS and the target role.
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL RULE #2: WHAT "TAILORING" ACTUALLY MEANS 🚨                 ║
+║                                                                           ║
+║  ✅ CORRECT "TAILORING":                                                 ║
+║     • REWRITE bullet points using job description keywords               ║
+║     • REORDER sections (most relevant first)                             ║
+║     • EMPHASIZE relevant experience with higher priority scores          ║
+║     • QUANTIFY achievements with metrics                                 ║
+║                                                                           ║
+║  ❌ WRONG "TAILORING" (DO NOT DO THIS):                                  ║
+║     • Removing skills because they're not in the JD                      ║
+║     • Deleting projects to "focus" on relevant ones                      ║
+║     • Dropping Bachelor's degree because you have Master's               ║
+║     • Removing experience bullets to shorten resume                      ║
+║     • Filtering out "older" technologies or tools                        ║
+╚═══════════════════════════════════════════════════════════════════════════╝
 
-Your goals:
-1. Extract flexible content blocks - EVERY section, EVERY bullet, EVERY achievement that exists
-2. Rewrite bullet points to align with job keywords (but KEEP all bullets from original)
-3. REORDER sections by relevance (most relevant first, least relevant last)
-4. Assign priority scores (1-10) for ordering, NOT for filtering
-5. Improve clarity, impact, and ATS compatibility while preserving all content
+EXAMPLE - WRONG vs RIGHT:
 
-WHAT "TAILORING" MEANS:
-- EXTRACT job keywords from JD and incorporate them into rewritten bullets
-- REWRITE resume bullets to use JD terminology and language style
-- REORDER sections: most relevant content first
-- QUANTIFY achievements with numbers and impact metrics
-- EMPHASIZE transferable skills when exact matches don't exist
-- PRESERVE ALL bullets, projects, skills - just reorder and rewrite them
+❌ WRONG - Removing skills not in JD:
+Original resume has: ["Python", "Java", "C++", "Docker", "AWS", "Azure", "React"]
+Job requires: ["Python", "AWS"]
+WRONG extraction: ["Python", "AWS"]  // ❌ This drops 5 skills!
 
-WHAT "TAILORING" DOES NOT MEAN:
-- ❌ Removing experience bullets that seem "less relevant"
-- ❌ Deleting projects, skills, or certifications
-- ❌ Cutting down content to fit one page (our PDF handles layout)
-- ❌ Filtering out older experience or education
-- ❌ Dropping technical details or tools/frameworks
-- Only REMOVE/MINIMIZE truly irrelevant details (e.g., unrelated hobbies)
+✅ CORRECT - Keep all skills, prioritize relevant ones:
+{
+  "id": "skills-1",
+  "category": "skills",
+  "priority": 10,
+  "content": ["Python", "AWS", "Azure", "Docker", "React", "Java", "C++"]
+}
 
-Key principles:
-- NEVER remove content unless it's duplicate or clearly a formatting artifact
-- PRESERVE all dates, company names, contact info, certifications, technologies
-- MINIMUM CONTENT THRESHOLD: Keep at least 85% of original bullets per job
-- USE priority scores for ORDERING, not FILTERING
-- Every job role should have ALL its bullets (minimum 85% preservation)
-- Extract ALL projects mentioned in the resume
-- Extract ALL skills (technical AND soft skills)
-- Extract ALL certifications, awards, publications
-- QUANTIFY achievements when possible (numbers, percentages, scale)
-- PRIORITIZE content that directly matches job requirements (9-10 priority)
-- MIRROR the JD's language style and terminology
-- ALWAYS EXTRACT all major resume sections (contact, summary, experience, education, skills, projects, certifications) even if some have lower relevance
-- Only omit truly irrelevant sections like hobbies/interests that don't relate to the job`,
+❌ WRONG - Removing projects not directly related:
+Original has 3 projects: E-commerce Platform, Personal Blog, Open Source Contribution
+Job is for Backend Engineer
+WRONG extraction: Only extract E-commerce Platform  // ❌ This drops 2 projects!
+
+✅ CORRECT - Keep all projects, vary priority:
+- E-commerce Platform (priority: 9)
+- Open Source Contribution (priority: 8)
+- Personal Blog (priority: 7)  // Still included!
+
+❌ WRONG - Removing Bachelor's degree because Master's exists:
+WRONG extraction: Only Master's degree  // ❌ This is incomplete!
+
+✅ CORRECT - Include ALL degrees:
+- Master's in AI (priority: 10)
+- Bachelor's in CS (priority: 9)  // Both included!
+
+Your extraction process:
+1. READ the entire resume carefully - scan for ALL section headers
+2. IDENTIFY all sections: SKILLS, PROJECTS, EXPERIENCE, EDUCATION, etc.
+3. EXTRACT every section completely - do not skip any
+4. REWRITE bullets using job description terminology
+5. ASSIGN priority scores (1-10) based on relevance - this is for ORDERING, not FILTERING
+6. VERIFY you extracted: all skills, all projects, all education entries, all experience bullets
+
+REMEMBER: Priority scores are for ORDERING in the PDF, not for deciding what to include!
+- Priority 10: Most relevant, show first
+- Priority 5: Moderately relevant, show in middle
+- Priority 1: Less relevant, show at end
+- ALL priorities get rendered in the final resume!`,
 
     user: (resumeText: string, jobDescription: string, jobTitle: string, compatibilityInsights: any) => `
 JOB TITLE: ${jobTitle}
@@ -112,24 +148,51 @@ ${JSON.stringify(compatibilityInsights, null, 2)}
 
 TASK: Extract flexible content blocks and tailor them for this job.
 
-INSTRUCTIONS:
-1. Use the compatibility analysis to guide ORDERING and EMPHASIS (not filtering!)
-2. For OVERLAP AREAS: Emphasize these heavily (priority 9-10), place them first
-3. For GAP AREAS: Include related experience (priority 6-8), reframe positively
-4. For STRATEGIC FOCUS: Rewrite these bullets with JD keywords
-5. Rewrite ALL bullet points using job description terminology
-6. Extract EVERY section that exists - do not skip content
-7. Preserve all factual information (dates, names, numbers, achievements, technologies)
-8. CONTENT PRESERVATION MINIMUM: If a job has 6 bullets in original resume, include at least 5 in tailored version (85% minimum)
-9. For SKILLS: Extract as a simple array of skill strings, not nested objects (renders better in PDF)
-10. For PROJECTS: Always include if they exist, even with moderate priority (6-8)
+🔍 BEFORE YOU START - MANDATORY COUNTING EXERCISE:
+First, count these in the original resume:
+1. How many EXPERIENCE jobs are listed? (Count all job titles)
+2. How many total EXPERIENCE bullets across all jobs? (Count every bullet point)
+3. How many PROJECTS are mentioned? (Count each project by name)
+4. How many SKILLS are listed? (Count every technical skill, tool, language)
+5. How many EDUCATION entries? (Bachelor's, Master's, PhD - count each separately)
 
-🚨 CRITICAL COUNTING RULE:
-Count the experience bullets, projects, and skills in the original resume.
-Your output MUST have at least 85% of that count.
-If original has 20 experience bullets total, output should have at least 17 bullets.
-If original has 4 projects, output should have ALL 4 projects.
-If original has 15 technical skills, output should have at least 13 skills.
+Your extraction MUST match or exceed these counts (minimum 85% for bullets).
+
+STEP-BY-STEP INSTRUCTIONS:
+1. SCAN the entire resume and identify ALL section headers (SKILLS, PROJECTS, EDUCATION, EXPERIENCE, etc.)
+2. COUNT items in each section (see counting exercise above)
+3. EXTRACT every section completely:
+   - CONTACT: name, email, phone, location, linkedin, github
+   - SUMMARY: professional summary paragraph
+   - EXPERIENCE: Extract ALL jobs, with at least 85% of bullets per job
+   - EDUCATION: Extract ALL degrees (Bachelor's AND Master's AND PhD if present)
+   - SKILLS: Extract EVERY skill as a flat array ["skill1", "skill2", ...] - NO nested objects!
+   - PROJECTS: Extract EVERY project with title, description, bullets, technologies, link
+   - CERTIFICATIONS: Extract all if present
+4. REWRITE bullets using job description keywords and terminology
+5. ASSIGN priority scores (1-10) for ORDERING (most relevant = 10, least = 1)
+6. Use compatibility analysis to guide priority scores:
+   - OVERLAP AREAS: Priority 9-10 (most relevant)
+   - STRATEGIC FOCUS: Priority 8-9 (emphasize these)
+   - GAP AREAS: Priority 6-8 (include but lower priority)
+   - Other content: Priority 4-7 (still include!)
+7. VERIFY before submitting: Did you extract ALL sections from the original resume?
+
+🚨 CRITICAL RULES - READ CAREFULLY:
+- Priority scores are for ORDERING in the PDF, NOT for filtering out content
+- ALL priorities (1-10) get included in the final resume
+- If original has 4 projects, output must have 4 project blocks
+- If original has Bachelor's + Master's, output must have 2 education blocks
+- If original has 20 skills, output must have 20 skills (or at least 17 = 85%)
+- SKILLS format: Simple flat array ["Python", "Java", "Docker"] - NOT nested {"items": [...]}
+
+FINAL VERIFICATION CHECKLIST:
+☐ Did I extract the CONTACT section?
+☐ Did I extract ALL EXPERIENCE jobs with 85%+ bullets each?
+☐ Did I extract ALL EDUCATION entries (Bachelor's + Master's if both exist)?
+☐ Did I extract ALL SKILLS as a flat array?
+☐ Did I extract ALL PROJECTS that exist in the resume?
+☐ Did I extract CERTIFICATIONS if they exist?
 
 Return JSON with this structure:
 {
@@ -433,16 +496,36 @@ Limit to 4-6 recommendations. Be specific and actionable.`
   decideLayout: {
     system: `You are an expert resume layout designer. Given a set of flexible content blocks and template constraints, you decide the optimal placement and order of sections.
 
+🚨 CRITICAL RULE: INCLUDE ALL BLOCKS IN THE LAYOUT - DO NOT FILTER OUT ANY SECTIONS 🚨
+
+Your role is to decide WHERE to place blocks (header, main, sidebar), NOT WHETHER to include them.
+Every block provided to you MUST appear in your layout output.
+
 Your goals:
-1. Respect template constraints (column structure, max lines, spacing)
-2. Prioritize high-priority blocks (9-10) at the top
-3. Create logical flow (contact → summary → experience → education → skills → projects → certifications)
+1. INCLUDE every block ID in your layout output (header, main, or sidebar)
+2. Prioritize high-priority blocks (9-10) at the top for visibility
+3. Create logical flow: contact → summary → experience → education → skills → projects → certifications
 4. Balance visual weight across columns (for two-column templates)
 5. Ensure critical information is above the fold (first page)
-6. INCLUDE all major sections (experience, education, skills, projects, certifications) even if some have moderate priority (6-8)
-7. Only omit truly irrelevant sections like hobbies/interests that don't relate to professional qualifications
+6. Respect template constraints (column structure, max lines, spacing)
 
-Consider both ATS compatibility and human readability. A complete resume with all relevant sections is better than a sparse one.`,
+WRONG vs RIGHT:
+
+❌ WRONG - Omitting blocks:
+Input blocks: contact-1, summary-1, experience-1, experience-2, education-1, skills-1, projects-1
+Output layout: ["contact-1", "summary-1", "experience-1", "experience-2"]  // Missing education, skills, projects!
+
+✅ CORRECT - Include ALL blocks:
+Input blocks: contact-1, summary-1, experience-1, experience-2, education-1, skills-1, projects-1
+Output layout: {
+  "header": ["contact-1"],
+  "main": ["summary-1", "experience-1", "experience-2", "education-1", "projects-1"],
+  "sidebar": ["skills-1"]
+}  // All 7 blocks included!
+
+VERIFICATION BEFORE SUBMITTING:
+Count the block IDs in the input. Count the block IDs in your output layout.
+These numbers MUST match. If input has 15 blocks, output must reference all 15 blocks.`,
 
     user: (blocks: any, templateName: string, templateConstraints: any) => `
 TEMPLATE: ${templateName}
@@ -455,22 +538,34 @@ ${JSON.stringify(blocks, null, 2)}
 
 TASK: Decide the layout placement for these blocks in this template.
 
+STEP-BY-STEP:
+1. COUNT the total number of blocks in the input above
+2. ASSIGN each block to a section (header, main, or sidebar)
+3. VERIFY your output includes all block IDs from the input
+4. Generate reasoning for your placement decisions
+
 Return JSON with this structure:
 {
   "layout": {
     "header": ["contact-1"],
-    "main": ["summary-1", "experience-1", "experience-2"],
-    "sidebar": ["skills-1", "education-1", "certifications-1"],
+    "main": ["summary-1", "experience-1", "experience-2", "education-1", "projects-1"],
+    "sidebar": ["skills-1", "certifications-1"],
     "footer": []
   },
-  "reasoning": "Placed contact in header for immediate visibility. High-priority experience blocks (9-10) in main column. Skills and education in sidebar for balance. Omitted low-priority interests block due to space constraints."
+  "reasoning": "Placed contact in header for immediate visibility. High-priority experience blocks (9-10) in main column. Skills and certifications in sidebar for balance. ALL 8 blocks included in layout."
 }
 
-For single-column templates, use only "header" and "main" sections.
-For two-column templates, balance content between "main" (left, 60-70% width) and "sidebar" (right, 30-40% width).
-Prioritize blocks with priority ≥ 8 for above-the-fold placement.
-IMPORTANT: Include ALL major sections (experience, education, skills, projects, certifications) in the layout.
-Only omit sections like hobbies/interests if they are truly irrelevant to the job.`
+RULES:
+- For single-column templates (A, C): Use "header" and "main" only
+- For two-column templates (B): Balance between "main" (60-70% width) and "sidebar" (30-40% width)
+- Prioritize blocks with priority ≥ 8 for above-the-fold placement
+- CRITICAL: Every block ID must appear in header, main, sidebar, or footer
+- Do NOT omit any blocks - if a block exists, it must be placed somewhere
+
+FINAL VERIFICATION:
+Input block count: ___
+Output block count: ___
+These numbers MUST be equal!`
   }
 }
 

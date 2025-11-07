@@ -68,6 +68,16 @@ async function callOpenAI(
     requestBody.response_format = { type: 'json_object' }
   }
 
+  // 🔍 DETAILED LOGGING: Log payload details for debugging
+  console.log('[OpenAI] 📤 REQUEST PAYLOAD DETAILS:')
+  console.log(`  - Model: ${MODEL}`)
+  console.log(`  - Temperature: ${temperature}`)
+  console.log(`  - System prompt length: ${systemPrompt.length} chars`)
+  console.log(`  - User prompt length: ${userPrompt.length} chars`)
+  console.log(`  - Total input length: ${systemPrompt.length + userPrompt.length} chars`)
+  console.log(`  - User prompt first 500 chars: ${userPrompt.substring(0, 500)}`)
+  console.log(`  - User prompt last 500 chars: ...${userPrompt.substring(userPrompt.length - 500)}`)
+
   const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
     headers: {
@@ -79,6 +89,7 @@ async function callOpenAI(
 
   if (!response.ok) {
     const errorText = await response.text()
+    console.error('[OpenAI] ❌ API ERROR:', response.status, errorText)
     throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
   }
 
@@ -90,9 +101,17 @@ async function callOpenAI(
 
   const content = data.choices[0].message.content
 
+  // 🔍 DETAILED LOGGING: Log response details
+  console.log('[OpenAI] 📥 RESPONSE DETAILS:')
+  console.log(`  - Response length: ${content.length} chars`)
+  console.log(`  - Response first 1000 chars: ${content.substring(0, 1000)}`)
+  if (content.length > 1000) {
+    console.log(`  - Response last 500 chars: ...${content.substring(content.length - 500)}`)
+  }
+
   // Log token usage for cost tracking
   if (data.usage) {
-    console.log(`[OpenAI] Tokens used: ${data.usage.total_tokens} (prompt: ${data.usage.prompt_tokens}, completion: ${data.usage.completion_tokens})`)
+    console.log(`[OpenAI] 💰 Tokens used: ${data.usage.total_tokens} (prompt: ${data.usage.prompt_tokens}, completion: ${data.usage.completion_tokens})`)
   }
 
   return requireJSON ? JSON.parse(content) : content
@@ -135,6 +154,20 @@ export async function extractAndTailorBlocks(params: {
 }): Promise<ExtractedBlocks> {
   console.log('[AI] Step 2: Extracting and tailoring content blocks...')
 
+  // 🔍 CRITICAL LOGGING: Log resume text statistics
+  console.log('🔍 [DEBUG] RESUME TEXT ANALYSIS:')
+  console.log(`  - Resume text length: ${params.resumeText.length} chars`)
+  console.log(`  - Resume text first 300 chars: ${params.resumeText.substring(0, 300)}`)
+  console.log(`  - Resume text last 300 chars: ...${params.resumeText.substring(params.resumeText.length - 300)}`)
+
+  // Check for key sections in original resume
+  const hasSkillsSection = params.resumeText.toLowerCase().includes('skill')
+  const hasProjectsSection = params.resumeText.toLowerCase().includes('project')
+  const hasEducationSection = params.resumeText.toLowerCase().includes('education')
+  console.log(`  - Contains "skill" keyword: ${hasSkillsSection}`)
+  console.log(`  - Contains "project" keyword: ${hasProjectsSection}`)
+  console.log(`  - Contains "education" keyword: ${hasEducationSection}`)
+
   const result = await callOpenAI(
     PROMPTS.extractAndTailorBlocks.system,
     PROMPTS.extractAndTailorBlocks.user(
@@ -147,7 +180,11 @@ export async function extractAndTailorBlocks(params: {
     true
   )
 
-  // VALIDATION: Check content preservation
+  // 🔍 DETAILED VALIDATION: Check content preservation
+  console.log('🔍 [DEBUG] EXTRACTED BLOCKS ANALYSIS:')
+  console.log(`  - Total blocks extracted: ${result.blocks?.length || 0}`)
+  console.log(`  - Detected categories: ${JSON.stringify(result.detectedCategories || [])}`)
+
   const experienceBlocks = result.blocks?.filter(b => b.category === 'experience') || []
   const totalBullets = experienceBlocks.reduce((sum, exp) => {
     return sum + (exp.content.bullets?.length || 0)
@@ -155,9 +192,50 @@ export async function extractAndTailorBlocks(params: {
 
   const projectBlocks = result.blocks?.filter(b => b.category === 'projects') || []
   const skillBlocks = result.blocks?.filter(b => b.category === 'skills') || []
+  const educationBlocks = result.blocks?.filter(b => b.category === 'education') || []
 
+  console.log(`  - Experience blocks: ${experienceBlocks.length}, Total bullets: ${totalBullets}`)
+  console.log(`  - Project blocks: ${projectBlocks.length}`)
+  console.log(`  - Skill blocks: ${skillBlocks.length}`)
+  console.log(`  - Education blocks: ${educationBlocks.length}`)
+
+  // Log details of each block type
+  if (skillBlocks.length > 0) {
+    console.log('🔍 [DEBUG] SKILLS BLOCKS DETAILED:')
+    skillBlocks.forEach((block, idx) => {
+      console.log(`  - Skills block ${idx + 1}:`, JSON.stringify(block, null, 2))
+    })
+  } else {
+    console.warn('⚠️ [WARNING] NO SKILLS BLOCKS EXTRACTED!')
+  }
+
+  if (projectBlocks.length > 0) {
+    console.log('🔍 [DEBUG] PROJECT BLOCKS DETAILED:')
+    projectBlocks.forEach((block, idx) => {
+      console.log(`  - Project block ${idx + 1}:`, JSON.stringify(block, null, 2))
+    })
+  } else {
+    console.warn('⚠️ [WARNING] NO PROJECT BLOCKS EXTRACTED!')
+  }
+
+  if (educationBlocks.length > 0) {
+    console.log('🔍 [DEBUG] EDUCATION BLOCKS DETAILED:')
+    educationBlocks.forEach((block, idx) => {
+      console.log(`  - Education block ${idx + 1}:`, JSON.stringify(block, null, 2))
+    })
+  }
+
+  // Validation warnings
   if (totalBullets < 5) {
     console.warn(`⚠️ [AI] Low bullet count detected: ${totalBullets}. Original resume may have been over-filtered.`)
+  }
+
+  if (hasSkillsSection && skillBlocks.length === 0) {
+    console.error('❌ [CRITICAL] Resume contains SKILLS section but NONE were extracted by AI!')
+  }
+
+  if (hasProjectsSection && projectBlocks.length === 0) {
+    console.error('❌ [CRITICAL] Resume contains PROJECTS section but NONE were extracted by AI!')
   }
 
   console.log('[AI] Step 2 complete:', {
@@ -165,7 +243,8 @@ export async function extractAndTailorBlocks(params: {
     categories: result.detectedCategories || [],
     experienceBullets: totalBullets,
     projects: projectBlocks.length,
-    skillCategories: skillBlocks.length
+    skillCategories: skillBlocks.length,
+    education: educationBlocks.length
   })
 
   return result
