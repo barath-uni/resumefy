@@ -121,6 +121,22 @@ Deno.serve(async (req) => {
     console.log('✅ [generate-tailored-resume] Job data fetched:', job.job_title)
     console.log('📄 [generate-tailored-resume] Resume text length:', resume.raw_text.length)
 
+    // 🔍 DETAILED LOGGING: Check resume completeness
+    console.log('🔍 [DEBUG] RESUME RAW TEXT ANALYSIS FROM DATABASE:')
+    console.log(`  - Resume ID: ${resume.id}`)
+    console.log(`  - Raw text length: ${resume.raw_text.length} chars`)
+    console.log(`  - First 400 chars: ${resume.raw_text.substring(0, 400)}`)
+    console.log(`  - Last 400 chars: ...${resume.raw_text.substring(resume.raw_text.length - 400)}`)
+
+    // Check for critical sections in raw text
+    const rawTextLower = resume.raw_text.toLowerCase()
+    console.log(`  - Contains "SKILLS" section: ${rawTextLower.includes('skill')}`)
+    console.log(`  - Contains "PROJECTS" section: ${rawTextLower.includes('project')}`)
+    console.log(`  - Contains "EDUCATION" section: ${rawTextLower.includes('education')}`)
+    console.log(`  - Contains "EXPERIENCE" section: ${rawTextLower.includes('experience')}`)
+    console.log(`  - Number of "skill" occurrences: ${(resume.raw_text.match(/skill/gi) || []).length}`)
+    console.log(`  - Number of "project" occurrences: ${(resume.raw_text.match(/project/gi) || []).length}`)
+
     // ============================
     // PAYWALL CHECK - CRITICAL CONTROL POINT
     // ============================
