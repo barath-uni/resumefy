@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Home, FileText, CreditCard, Sparkles, HelpCircle } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { getUserResumes } from "@/lib/uploadResume"
 
@@ -25,7 +25,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
-  const navigate = useNavigate()
   const [tailorUrl, setTailorUrl] = React.useState("/app/tailor-resume")
 
   // Smart navigation: fetch user's first resume and go directly to generated resumes history

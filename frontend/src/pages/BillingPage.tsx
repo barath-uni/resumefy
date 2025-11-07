@@ -5,8 +5,7 @@ import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
-import { Check, Sparkles, Zap, Shield, Crown, Loader2, Calendar, User, Mail } from 'lucide-react'
-import { getUserTier } from '../lib/paywall'
+import { Check, Sparkles, Zap, Shield, Crown, Loader2, Calendar, Mail } from 'lucide-react'
 
 interface SubscriptionData {
   email?: string

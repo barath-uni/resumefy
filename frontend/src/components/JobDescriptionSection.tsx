@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/button'
-import { Briefcase, Plus, Loader2, FileText, Download, Eye, AlertCircle } from 'lucide-react'
+import { Briefcase, Plus, Loader2, Download, Eye, AlertCircle } from 'lucide-react'
 import TemplatePicker from './TemplatePicker'
 
 interface Job {

@@ -24,7 +24,7 @@ export function PaywallModal({
   isOpen,
   onClose,
   reason,
-  currentTier = 'free',
+  currentTier: _currentTier = 'free',
   current,
   limit,
   message
