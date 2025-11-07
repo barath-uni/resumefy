@@ -81,6 +81,7 @@ WHAT "TAILORING" DOES NOT MEAN:
 - ❌ Cutting down content to fit one page (our PDF handles layout)
 - ❌ Filtering out older experience or education
 - ❌ Dropping technical details or tools/frameworks
+- Only REMOVE/MINIMIZE truly irrelevant details (e.g., unrelated hobbies)
 
 Key principles:
 - NEVER remove content unless it's duplicate or clearly a formatting artifact
@@ -92,7 +93,10 @@ Key principles:
 - Extract ALL skills (technical AND soft skills)
 - Extract ALL certifications, awards, publications
 - QUANTIFY achievements when possible (numbers, percentages, scale)
-- MIRROR the JD's language style and terminology`,
+- PRIORITIZE content that directly matches job requirements (9-10 priority)
+- MIRROR the JD's language style and terminology
+- ALWAYS EXTRACT all major resume sections (contact, summary, experience, education, skills, projects, certifications) even if some have lower relevance
+- Only omit truly irrelevant sections like hobbies/interests that don't relate to the job`,
 
     user: (resumeText: string, jobDescription: string, jobTitle: string, compatibilityInsights: any) => `
 JOB TITLE: ${jobTitle}
@@ -117,6 +121,8 @@ INSTRUCTIONS:
 6. Extract EVERY section that exists - do not skip content
 7. Preserve all factual information (dates, names, numbers, achievements, technologies)
 8. CONTENT PRESERVATION MINIMUM: If a job has 6 bullets in original resume, include at least 5 in tailored version (85% minimum)
+9. For SKILLS: Extract as a simple array of skill strings, not nested objects (renders better in PDF)
+10. For PROJECTS: Always include if they exist, even with moderate priority (6-8)
 
 🚨 CRITICAL COUNTING RULE:
 Count the experience bullets, projects, and skills in the original resume.
@@ -182,10 +188,7 @@ Return JSON with this structure:
       "id": "skills-1",
       "category": "skills",
       "priority": 9,
-      "content": {
-        "title": "Technical Skills",
-        "items": ["Python", "Azure", "Docker", "SQL"]
-      }
+      "content": ["Python", "Azure", "Docker", "SQL", "Kubernetes", "React"]
     },
     {
       "id": "certifications-1",
@@ -204,7 +207,11 @@ Return JSON with this structure:
       "priority": 8,
       "content": {
         "title": "E-commerce Platform",
-        "description": "Built scalable platform using Python and Azure...",
+        "description": "Built scalable platform using Python and Azure",
+        "bullets": [
+          "Architected microservices backend handling 100K+ daily transactions",
+          "Implemented CI/CD pipeline reducing deployment time by 60%"
+        ],
         "technologies": ["Python", "Azure", "React"],
         "link": "github.com/user/project"
       }
@@ -429,11 +436,13 @@ Limit to 4-6 recommendations. Be specific and actionable.`
 Your goals:
 1. Respect template constraints (column structure, max lines, spacing)
 2. Prioritize high-priority blocks (9-10) at the top
-3. Create logical flow (contact → summary → experience → education → skills)
+3. Create logical flow (contact → summary → experience → education → skills → projects → certifications)
 4. Balance visual weight across columns (for two-column templates)
 5. Ensure critical information is above the fold (first page)
+6. INCLUDE all major sections (experience, education, skills, projects, certifications) even if some have moderate priority (6-8)
+7. Only omit truly irrelevant sections like hobbies/interests that don't relate to professional qualifications
 
-Consider both ATS compatibility and human readability.`,
+Consider both ATS compatibility and human readability. A complete resume with all relevant sections is better than a sparse one.`,
 
     user: (blocks: any, templateName: string, templateConstraints: any) => `
 TEMPLATE: ${templateName}
@@ -459,7 +468,9 @@ Return JSON with this structure:
 
 For single-column templates, use only "header" and "main" sections.
 For two-column templates, balance content between "main" (left, 60-70% width) and "sidebar" (right, 30-40% width).
-Prioritize blocks with priority ≥ 8 for above-the-fold placement.`
+Prioritize blocks with priority ≥ 8 for above-the-fold placement.
+IMPORTANT: Include ALL major sections (experience, education, skills, projects, certifications) in the layout.
+Only omit sections like hobbies/interests if they are truly irrelevant to the job.`
   }
 }
 

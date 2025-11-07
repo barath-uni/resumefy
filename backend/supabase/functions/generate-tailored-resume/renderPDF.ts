@@ -219,21 +219,45 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
     // SKILLS BLOCK
     else if (block.category === 'skills') {
       console.log('📄 Rendering skills:', block.content)
-      content.push({
-        text: 'SKILLS',
-        style: 'sectionTitle',
-        margin: [0, 5, 0, 10]
-      })
+
+      if (!sectionsAdded.has('skills')) {
+        content.push({
+          text: 'SKILLS',
+          style: 'sectionTitle',
+          margin: [0, 5, 0, 10]
+        })
+        sectionsAdded.add('skills')
+      }
+
+      // Handle multiple skill formats
+      let skillsText = ''
 
       if (Array.isArray(block.content)) {
-        content.push({
-          text: block.content.join(' • '),
-          style: 'skills',
-          margin: [0, 0, 0, 15]
-        })
+        // Format: ["Python", "Azure", "Docker"]
+        skillsText = block.content.join(' • ')
       } else if (typeof block.content === 'string') {
+        // Format: "Python, Azure, Docker"
+        skillsText = block.content
+      } else if (block.content && typeof block.content === 'object') {
+        // Format: { title: "Technical Skills", items: ["Python", "Azure"] }
+        // OR: { items: ["Python", "Azure"] }
+        if (block.content.title) {
+          content.push({
+            text: block.content.title,
+            style: 'jobTitle',
+            margin: [0, 0, 0, 3]
+          })
+        }
+        if (Array.isArray(block.content.items)) {
+          skillsText = block.content.items.join(' • ')
+        } else if (typeof block.content.items === 'string') {
+          skillsText = block.content.items
+        }
+      }
+
+      if (skillsText) {
         content.push({
-          text: block.content,
+          text: skillsText,
           style: 'skills',
           margin: [0, 0, 0, 15]
         })
@@ -261,6 +285,7 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
           margin: [0, 0, 0, 3]
         })
 
+        // Handle description (paragraph format)
         if (proj.description) {
           content.push({
             text: proj.description,
@@ -269,6 +294,16 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
           })
         }
 
+        // Handle bullets (list format)
+        if (Array.isArray(proj.bullets) && proj.bullets.length > 0) {
+          content.push({
+            ul: proj.bullets,
+            style: 'bulletList',
+            margin: [0, 0, 0, 5]
+          })
+        }
+
+        // Handle technologies
         if (proj.technologies) {
           const techText = Array.isArray(proj.technologies)
             ? proj.technologies.join(', ')
@@ -276,6 +311,15 @@ function renderTemplateA(blocks: ContentBlock[], layout: LayoutDecision): any {
 
           content.push({
             text: `Technologies: ${techText}`,
+            style: 'dates',
+            margin: [0, 0, 0, 12]
+          })
+        }
+
+        // Handle link
+        if (proj.link || proj.url) {
+          content.push({
+            text: proj.link || proj.url,
             style: 'dates',
             margin: [0, 0, 0, 12]
           })
