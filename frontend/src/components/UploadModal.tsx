@@ -120,7 +120,7 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
     if (isAuthenticated) {
       console.log('✅ [UploadModal] User already authenticated, redirecting to dashboard')
       onClose()
-      navigate('/dashboard')
+      navigate('/app/dashboard')
       return
     }
 
@@ -245,7 +245,7 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
 
       // Query auth.users to check if email exists (this will work via admin API)
       // For client-side, we'll try signUp and handle the error
-      const redirectUrl = `${import.meta.env.VITE_APP_URL || 'http://localhost:5173'}/dashboard`
+      const redirectUrl = `${import.meta.env.VITE_APP_URL || 'http://localhost:5173'}/app/dashboard`
 
       // Try to sign up - if user exists, this will return an error or success with existing user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

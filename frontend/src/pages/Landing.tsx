@@ -62,7 +62,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
     console.log('🔘 [Landing] Get Started clicked, isAuthenticated:', isAuthenticated)
     if (isAuthenticated) {
       console.log('✅ [Landing] User authenticated, redirecting to dashboard')
-      navigate('/dashboard')
+      navigate('/app/dashboard')
     } else {
       console.log('📝 [Landing] User not authenticated, opening upload modal')
       onOpenUploadModal()
@@ -73,7 +73,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
     console.log('🔘 [Landing] Sign In clicked, isAuthenticated:', isAuthenticated)
     if (isAuthenticated) {
       console.log('✅ [Landing] User authenticated, redirecting to dashboard')
-      navigate('/dashboard')
+      navigate('/app/dashboard')
     } else {
       console.log('📝 [Landing] User not authenticated, opening upload modal')
       onOpenUploadModal()
