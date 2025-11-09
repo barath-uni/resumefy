@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
 import confetti from 'canvas-confetti'
 import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -7,10 +6,7 @@ import { Badge } from '../components/ui/badge'
 import { CheckCircle, Sparkles, Loader2, Crown, Zap, Star, ArrowRight } from 'lucide-react'
 
 export default function PaymentSuccessPage() {
-  const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const sessionId = searchParams.get('session_id')
 
   useEffect(() => {
     // Give the webhook time to process (increased to 3 seconds)

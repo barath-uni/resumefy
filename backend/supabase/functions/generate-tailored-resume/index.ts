@@ -2,12 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { renderPDF } from './renderPDF.ts'
 import {
-  analyzeCompatibility,
-  extractAndTailorBlocks,
-  calculateFitScore,
-  detectMissingSkills,
-  generateRecommendations,
-  decideLayout,
+  conversationalTailoring,
 } from '../_shared/aiHelpers.ts'
 
 const corsHeaders = {
@@ -245,62 +240,8 @@ Deno.serve(async (req) => {
       console.log('❌ [Cache Layer 1] MISS - Generating new tailored content with AI...')
 
       // ============================
-      // AGENTIC AI ORCHESTRATION
+      // NEW CONVERSATIONAL AI FLOW (Single conversation, 6 steps)
       // ============================
-
-      // AI STEP 1: Analyze compatibility between resume and JD
-      console.log('🧠 [AI Step 1/6] Analyzing compatibility...')
-      const compatibilityAnalysis = await analyzeCompatibility({
-        resumeText: resume.raw_text,
-        jobDescription: job.job_description,
-        jobTitle: job.job_title
-      })
-      console.log('✅ [AI Step 1/6] Compatibility analysis complete:', {
-        overlaps: compatibilityAnalysis.overlapAreas.length,
-        gaps: compatibilityAnalysis.gapAreas.length,
-        focus: compatibilityAnalysis.strategicFocus.length
-      })
-
-      // AI STEP 2: Extract and tailor content blocks using compatibility insights
-      console.log('🧠 [AI Step 2/6] Extracting and tailoring content blocks...')
-      tailoredBlocks = await extractAndTailorBlocks({
-        resumeText: resume.raw_text,
-        jobDescription: job.job_description,
-        jobTitle: job.job_title,
-        compatibilityInsights: compatibilityAnalysis
-      })
-      console.log('✅ [AI Step 2/6] Tailored blocks extracted:', tailoredBlocks.blocks.length, 'blocks')
-
-      // AI STEP 3: Calculate fit score (0-100%)
-      console.log('🧠 [AI Step 3/6] Calculating fit score...')
-      fitScoreAnalysis = await calculateFitScore({
-        originalResume: resume.raw_text,
-        tailoredBlocks: tailoredBlocks.blocks,
-        jobDescription: job.job_description
-      })
-      console.log('✅ [AI Step 3/6] Fit score calculated:', fitScoreAnalysis.score, '%')
-
-      // AI STEP 4: Detect missing skills with certification suggestions
-      console.log('🧠 [AI Step 4/6] Detecting missing skills...')
-      const skillBlocks = tailoredBlocks.blocks.filter(b => b.category === 'skills')
-      missingSkillsAnalysis = await detectMissingSkills({
-        resumeSkills: skillBlocks,
-        jdRequirements: job.job_description,
-        jobTitle: job.job_title
-      })
-      console.log('✅ [AI Step 4/6] Missing skills detected:', missingSkillsAnalysis.missingSkills.length)
-
-      // AI STEP 5: Generate recommendations for improvement
-      console.log('🧠 [AI Step 5/6] Generating recommendations...')
-      recommendationsAnalysis = await generateRecommendations({
-        fitScore: fitScoreAnalysis.score,
-        missingSkills: missingSkillsAnalysis.missingSkills,
-        tailoredContent: tailoredBlocks.blocks
-      })
-      console.log('✅ [AI Step 5/6] Recommendations generated:', recommendationsAnalysis.recommendations.length)
-
-      // AI STEP 6: Decide layout for template
-      console.log('🧠 [AI Step 6/6] Deciding layout...')
 
       // Define template constraints for layout decision
       const templateConstraints = {
@@ -330,12 +271,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      layoutDecision = await decideLayout({
-        blocks: tailoredBlocks.blocks,
+      // Execute all 6 AI steps in a single conversation
+      const aiResults = await conversationalTailoring({
+        resumeText: resume.raw_text,
+        jobDescription: job.job_description,
+        jobTitle: job.job_title,
         templateName: `Template ${templateName}`,
         templateConstraints: templateConstraints[templateName as 'A' | 'B' | 'C']
       })
-      console.log('✅ [AI Step 6/6] Layout decided:', Object.keys(layoutDecision.layout))
+
+      // Extract results from conversation
+      tailoredBlocks = aiResults.blocks
+      fitScoreAnalysis = aiResults.fitScore
+      missingSkillsAnalysis = aiResults.missingSkills
+      recommendationsAnalysis = aiResults.recommendations
+      layoutDecision = aiResults.layout
+
+      console.log('✅ [AI] All 6 steps complete via conversational flow:', {
+        blocks: tailoredBlocks.blocks.length,
+        fitScore: fitScoreAnalysis.score,
+        missingSkills: missingSkillsAnalysis.missingSkills.length,
+        recommendations: recommendationsAnalysis.recommendations.length,
+        layoutSections: Object.keys(layoutDecision.layout)
+      })
 
       // Convert new layout format to renderPDF expected format
       // New format: { header: ["id1"], main: ["id2", "id3"], sidebar: ["id4"] }

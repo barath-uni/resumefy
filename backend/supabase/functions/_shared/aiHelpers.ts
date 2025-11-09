@@ -68,15 +68,21 @@ async function callOpenAI(
     requestBody.response_format = { type: 'json_object' }
   }
 
-  // 🔍 DETAILED LOGGING: Log payload details for debugging
+  // 🔍 DETAILED LOGGING: Log FULL payload for debugging
+  console.log('═══════════════════════════════════════════════════════════')
   console.log('[OpenAI] 📤 REQUEST PAYLOAD DETAILS:')
   console.log(`  - Model: ${MODEL}`)
   console.log(`  - Temperature: ${temperature}`)
   console.log(`  - System prompt length: ${systemPrompt.length} chars`)
   console.log(`  - User prompt length: ${userPrompt.length} chars`)
   console.log(`  - Total input length: ${systemPrompt.length + userPrompt.length} chars`)
-  console.log(`  - User prompt first 500 chars: ${userPrompt.substring(0, 500)}`)
-  console.log(`  - User prompt last 500 chars: ...${userPrompt.substring(userPrompt.length - 500)}`)
+  console.log('─────────────────────────────────────────────────────────')
+  console.log('[OpenAI] 📝 FULL SYSTEM PROMPT:')
+  console.log(systemPrompt)
+  console.log('─────────────────────────────────────────────────────────')
+  console.log('[OpenAI] 📝 FULL USER PROMPT:')
+  console.log(userPrompt)
+  console.log('═══════════════════════════════════════════════════════════')
 
   const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
@@ -101,13 +107,13 @@ async function callOpenAI(
 
   const content = data.choices[0].message.content
 
-  // 🔍 DETAILED LOGGING: Log response details
-  console.log('[OpenAI] 📥 RESPONSE DETAILS:')
+  // 🔍 DETAILED LOGGING: Log FULL response
+  console.log('═══════════════════════════════════════════════════════════')
+  console.log('[OpenAI] 📥 FULL RESPONSE:')
   console.log(`  - Response length: ${content.length} chars`)
-  console.log(`  - Response first 1000 chars: ${content.substring(0, 1000)}`)
-  if (content.length > 1000) {
-    console.log(`  - Response last 500 chars: ...${content.substring(content.length - 500)}`)
-  }
+  console.log('─────────────────────────────────────────────────────────')
+  console.log(content)
+  console.log('═══════════════════════════════════════════════════════════')
 
   // Log token usage for cost tracking
   if (data.usage) {
@@ -361,6 +367,332 @@ export async function decideLayout(params: {
   })
 
   return result
+}
+
+/**
+ * NEW CONVERSATIONAL FLOW: Single conversation with 6 steps maintaining full context
+ * This replaces the 6 separate API calls to prevent information loss between steps
+ */
+export async function conversationalTailoring(params: {
+  resumeText: string
+  jobDescription: string
+  jobTitle: string
+  templateName: string
+  templateConstraints: any
+}): Promise<{
+  compatibility: CompatibilityAnalysis
+  blocks: ExtractedBlocks
+  fitScore: FitScore
+  missingSkills: MissingSkillsAnalysis
+  recommendations: RecommendationsAnalysis
+  layout: LayoutDecision
+}> {
+  console.log('🚀 [CONVERSATIONAL TAILORING] Starting single conversation with 6 steps...')
+
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set')
+  }
+
+  const messages: OpenAIMessage[] = []
+
+  // Master system prompt that stays consistent throughout conversation
+  const masterSystemPrompt = `You are an expert resume tailoring AI assistant. You will help analyze a resume against a job description and tailor it through 6 sequential steps.
+
+CRITICAL RULES THROUGHOUT ALL STEPS:
+1. PRESERVE ALL CONTENT - Do not remove sections, skills, projects, or education
+2. MAINTAIN CONTEXT - Remember what you extracted in previous steps
+3. BE CONSISTENT - If you extract a block in Step 2, include it in Step 6 layout
+4. PRESERVE 85%+ of original content - Reorder and rewrite, don't delete
+
+You will be asked to complete these steps in order:
+- Step 1: Analyze compatibility between resume and job
+- Step 2: Extract ALL sections from resume (contact, experience, education, skills, projects, etc.)
+- Step 3: Calculate fit score based on tailored blocks
+- Step 4: Identify missing skills with learning suggestions
+- Step 5: Generate recommendations for improvement
+- Step 6: Create layout including ALL blocks from Step 2
+
+Each step builds on the previous ones. Maintain consistency across all steps.`
+
+  messages.push({ role: 'system', content: masterSystemPrompt })
+
+  // ============================================================================
+  // STEP 1: Analyze Compatibility
+  // ============================================================================
+  console.log('🧠 [STEP 1/6] Analyzing compatibility...')
+
+  const step1Prompt = PROMPTS.analyzeCompatibility.user(
+    params.resumeText,
+    params.jobDescription,
+    params.jobTitle
+  )
+
+  messages.push({ role: 'user', content: step1Prompt })
+
+  const step1Response = await callOpenAIWithMessages(messages, 0.1, true)
+  const compatibility: CompatibilityAnalysis = JSON.parse(step1Response)
+
+  messages.push({ role: 'assistant', content: step1Response })
+
+  console.log('✅ [STEP 1/6] Complete:', {
+    overlaps: compatibility.overlapAreas?.length || 0,
+    gaps: compatibility.gapAreas?.length || 0,
+    focus: compatibility.strategicFocus?.length || 0
+  })
+
+  // ============================================================================
+  // STEP 2: Extract and Tailor Blocks (MOST CRITICAL - PRESERVES CONTENT)
+  // ============================================================================
+  console.log('🧠 [STEP 2/6] Extracting and tailoring content blocks...')
+
+  // Log resume analysis
+  console.log('🔍 [DEBUG] RESUME TEXT ANALYSIS:')
+  console.log(`  - Resume length: ${params.resumeText.length} chars`)
+  console.log(`  - Has skills: ${params.resumeText.toLowerCase().includes('skill')}`)
+  console.log(`  - Has projects: ${params.resumeText.toLowerCase().includes('project')}`)
+  console.log(`  - Has education: ${params.resumeText.toLowerCase().includes('education')}`)
+
+  const step2Prompt = `${PROMPTS.extractAndTailorBlocks.system}
+
+Now, complete Step 2:
+
+${PROMPTS.extractAndTailorBlocks.user(
+    params.resumeText,
+    params.jobDescription,
+    params.jobTitle,
+    compatibility
+  )}`
+
+  messages.push({ role: 'user', content: step2Prompt })
+
+  const step2Response = await callOpenAIWithMessages(messages, 0.1, true)
+  const blocks: ExtractedBlocks = JSON.parse(step2Response)
+
+  messages.push({ role: 'assistant', content: step2Response })
+
+  // Validation logging
+  const experienceBlocks = blocks.blocks?.filter(b => b.category === 'experience') || []
+  const totalBullets = experienceBlocks.reduce((sum, exp) => sum + (exp.content.bullets?.length || 0), 0)
+  const projectBlocks = blocks.blocks?.filter(b => b.category === 'projects') || []
+  const skillBlocks = blocks.blocks?.filter(b => b.category === 'skills') || []
+  const educationBlocks = blocks.blocks?.filter(b => b.category === 'education') || []
+
+  console.log('✅ [STEP 2/6] Complete:', {
+    totalBlocks: blocks.blocks?.length || 0,
+    categories: blocks.detectedCategories,
+    experienceBlocks: experienceBlocks.length,
+    experienceBullets: totalBullets,
+    projectBlocks: projectBlocks.length,
+    skillBlocks: skillBlocks.length,
+    educationBlocks: educationBlocks.length
+  })
+
+  if (totalBullets < 5) {
+    console.warn(`⚠️ Low bullet count: ${totalBullets}`)
+  }
+  if (params.resumeText.toLowerCase().includes('skill') && skillBlocks.length === 0) {
+    console.error('❌ CRITICAL: Resume has SKILLS but none extracted!')
+  }
+  if (params.resumeText.toLowerCase().includes('project') && projectBlocks.length === 0) {
+    console.error('❌ CRITICAL: Resume has PROJECTS but none extracted!')
+  }
+
+  // ============================================================================
+  // STEP 3: Calculate Fit Score
+  // ============================================================================
+  console.log('🧠 [STEP 3/6] Calculating fit score...')
+
+  const step3Prompt = `${PROMPTS.calculateFitScore.system}
+
+Now, complete Step 3 using the blocks you just extracted:
+
+${PROMPTS.calculateFitScore.user(
+    params.resumeText,
+    blocks.blocks,
+    params.jobDescription
+  )}`
+
+  messages.push({ role: 'user', content: step3Prompt })
+
+  const step3Response = await callOpenAIWithMessages(messages, 0.1, true)
+  const fitScore: FitScore = JSON.parse(step3Response)
+
+  messages.push({ role: 'assistant', content: step3Response })
+
+  console.log('✅ [STEP 3/6] Complete:', {
+    score: fitScore.score,
+    breakdown: fitScore.breakdown
+  })
+
+  // ============================================================================
+  // STEP 4: Detect Missing Skills
+  // ============================================================================
+  console.log('🧠 [STEP 4/6] Detecting missing skills...')
+
+  const step4Prompt = `${PROMPTS.detectMissingSkills.system}
+
+Now, complete Step 4:
+
+${PROMPTS.detectMissingSkills.user(
+    skillBlocks,
+    params.jobDescription,
+    params.jobTitle
+  )}`
+
+  messages.push({ role: 'user', content: step4Prompt })
+
+  const step4Response = await callOpenAIWithMessages(messages, 0.2, true)
+  const missingSkills: MissingSkillsAnalysis = JSON.parse(step4Response)
+
+  messages.push({ role: 'assistant', content: step4Response })
+
+  console.log('✅ [STEP 4/6] Complete:', {
+    missingSkillsCount: missingSkills.missingSkills?.length || 0
+  })
+
+  // ============================================================================
+  // STEP 5: Generate Recommendations
+  // ============================================================================
+  console.log('🧠 [STEP 5/6] Generating recommendations...')
+
+  const step5Prompt = `${PROMPTS.generateRecommendations.system}
+
+Now, complete Step 5:
+
+${PROMPTS.generateRecommendations.user(
+    fitScore.score,
+    missingSkills,
+    blocks.blocks
+  )}`
+
+  messages.push({ role: 'user', content: step5Prompt })
+
+  const step5Response = await callOpenAIWithMessages(messages, 0.2, true)
+  const recommendations: RecommendationsAnalysis = JSON.parse(step5Response)
+
+  messages.push({ role: 'assistant', content: step5Response })
+
+  console.log('✅ [STEP 5/6] Complete:', {
+    recommendationCount: recommendations.recommendations?.length || 0
+  })
+
+  // ============================================================================
+  // STEP 6: Decide Layout (CRITICAL - MUST INCLUDE ALL BLOCKS FROM STEP 2)
+  // ============================================================================
+  console.log('🧠 [STEP 6/6] Deciding layout for all extracted blocks...')
+
+  const step6Prompt = `${PROMPTS.decideLayout.system}
+
+Now, complete Step 6 - CRITICAL: You MUST include ALL ${blocks.blocks?.length || 0} blocks you extracted in Step 2.
+
+🚨 REMINDER: In Step 2, you extracted these block IDs:
+${blocks.blocks?.map(b => `- ${b.id} (${b.category})`).join('\n')}
+
+Your layout output MUST reference ALL of these block IDs.
+
+${PROMPTS.decideLayout.user(
+    blocks.blocks,
+    params.templateName,
+    params.templateConstraints
+  )}`
+
+  messages.push({ role: 'user', content: step6Prompt })
+
+  const step6Response = await callOpenAIWithMessages(messages, 0.1, true)
+  const layout: LayoutDecision = JSON.parse(step6Response)
+
+  messages.push({ role: 'assistant', content: step6Response })
+
+  // Validate layout includes all blocks
+  const layoutBlockIds = [
+    ...(layout.layout.header || []),
+    ...(layout.layout.main || []),
+    ...(layout.layout.sidebar || []),
+    ...(layout.layout.footer || [])
+  ]
+
+  const extractedBlockIds = blocks.blocks?.map(b => b.id) || []
+  const missingInLayout = extractedBlockIds.filter(id => !layoutBlockIds.includes(id))
+
+  if (missingInLayout.length > 0) {
+    console.error(`❌ CRITICAL: Layout missing ${missingInLayout.length} blocks:`, missingInLayout)
+  }
+
+  console.log('✅ [STEP 6/6] Complete:', {
+    sections: Object.keys(layout.layout),
+    totalBlocksInLayout: layoutBlockIds.length,
+    expectedBlocks: extractedBlockIds.length,
+    allBlocksIncluded: missingInLayout.length === 0
+  })
+
+  console.log('🎉 [CONVERSATIONAL TAILORING] All 6 steps complete!')
+
+  return {
+    compatibility,
+    blocks,
+    fitScore,
+    missingSkills,
+    recommendations,
+    layout
+  }
+}
+
+/**
+ * Helper function to call OpenAI with message history
+ */
+async function callOpenAIWithMessages(
+  messages: OpenAIMessage[],
+  temperature = 0.1,
+  requireJSON = true
+): Promise<string> {
+  const requestBody: OpenAIRequest = {
+    model: MODEL,
+    messages: messages,
+    temperature,
+  }
+
+  if (requireJSON) {
+    requestBody.response_format = { type: 'json_object' }
+  }
+
+  // Log conversation turn
+  const turnNumber = Math.floor((messages.length - 1) / 2) + 1
+  console.log(`[OpenAI] 📤 Turn ${turnNumber} - Sending message to API`)
+  console.log(`  - Total messages in conversation: ${messages.length}`)
+  console.log(`  - Latest user message length: ${messages[messages.length - 1].content.length} chars`)
+
+  const response = await fetch(OPENAI_API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('[OpenAI] ❌ API ERROR:', response.status, errorText)
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
+  }
+
+  const data: OpenAIResponse = await response.json()
+
+  if (!data.choices || data.choices.length === 0) {
+    throw new Error('No response from OpenAI API')
+  }
+
+  const content = data.choices[0].message.content
+
+  console.log(`[OpenAI] 📥 Turn ${turnNumber} - Received response`)
+  console.log(`  - Response length: ${content.length} chars`)
+
+  // Log token usage
+  if (data.usage) {
+    console.log(`[OpenAI] 💰 Tokens: ${data.usage.total_tokens} (prompt: ${data.usage.prompt_tokens}, completion: ${data.usage.completion_tokens})`)
+  }
+
+  return content
 }
 
 /**

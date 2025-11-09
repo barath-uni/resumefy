@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Plus, Lock, Trash2, Eye, Upload as UploadIcon, Sparkles, X } from 'lucide-react'
+import { FileText, Plus, Trash2, Eye, Sparkles, X } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
@@ -60,7 +60,7 @@ export default function MyResumesPage() {
     }
   }
 
-  const handleUploadSuccess = async (resumeId: string, fileUrl: string) => {
+  const handleUploadSuccess = async (_resumeId: string, _fileUrl: string) => {
     if (user) {
       const userResumes = await getUserResumes(user.id)
       if (userResumes) {

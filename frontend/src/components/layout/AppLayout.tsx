@@ -18,7 +18,7 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [user, setUser] = useState<{ name: string; email: string; avatar?: string }>()
-  const [userId, setUserId] = useState<string>()
+  const [, setUserId] = useState<string>()
   const [currentTier, setCurrentTier] = useState<string>('free')
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()

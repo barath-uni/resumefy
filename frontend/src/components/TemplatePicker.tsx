@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { templates, type Template } from '../lib/templateData'
+import { templates } from '../lib/templateData'
 import { Card } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
