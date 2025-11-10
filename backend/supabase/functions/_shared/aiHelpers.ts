@@ -387,13 +387,14 @@ export async function conversationalTailoring(params: {
   recommendations: RecommendationsAnalysis
   layout: LayoutDecision
 }> {
-  console.log('🚀 [CONVERSATIONAL TAILORING] Starting single conversation with 6 steps...')
+  console.log('🚀 [CONVERSATIONAL TAILORING] Starting with OpenAI Responses API...')
 
   if (!OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY environment variable is not set')
   }
 
-  const messages: OpenAIMessage[] = []
+  // Create conversation object on OpenAI (persists in Dashboard)
+  const conversationId = await createConversation()
 
   // Master system prompt that stays consistent throughout conversation
   const masterSystemPrompt = `You are an expert resume tailoring AI assistant. You will help analyze a resume against a job description and tailor it through 6 sequential steps.
@@ -414,25 +415,30 @@ You will be asked to complete these steps in order:
 
 Each step builds on the previous ones. Maintain consistency across all steps.`
 
-  messages.push({ role: 'system', content: masterSystemPrompt })
-
   // ============================================================================
   // STEP 1: Analyze Compatibility
   // ============================================================================
   console.log('🧠 [STEP 1/6] Analyzing compatibility...')
 
-  const step1Prompt = PROMPTS.analyzeCompatibility.user(
-    params.resumeText,
-    params.jobDescription,
-    params.jobTitle
-  )
+  const step1Input = [
+    { role: 'system', content: masterSystemPrompt },
+    { role: 'user', content: PROMPTS.analyzeCompatibility.user(
+      params.resumeText,
+      params.jobDescription,
+      params.jobTitle
+    )}
+  ]
 
-  messages.push({ role: 'user', content: step1Prompt })
+  const step1 = await sendTurn(conversationId, step1Input, 1, 0.1)
 
-  const step1Response = await callOpenAIWithMessages(messages, 0.1, true)
-  const compatibility: CompatibilityAnalysis = JSON.parse(step1Response)
-
-  messages.push({ role: 'assistant', content: step1Response })
+  let compatibility: CompatibilityAnalysis
+  try {
+    compatibility = JSON.parse(step1.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 1] JSON Parse Error:', parseError.message)
+    console.error('Response preview:', step1.outputText.substring(0, 500))
+    throw new Error(`Failed to parse Step 1 compatibility analysis: ${parseError.message}`)
+  }
 
   console.log('✅ [STEP 1/6] Complete:', {
     overlaps: compatibility.overlapAreas?.length || 0,
@@ -452,23 +458,31 @@ Each step builds on the previous ones. Maintain consistency across all steps.`
   console.log(`  - Has projects: ${params.resumeText.toLowerCase().includes('project')}`)
   console.log(`  - Has education: ${params.resumeText.toLowerCase().includes('education')}`)
 
-  const step2Prompt = `${PROMPTS.extractAndTailorBlocks.system}
+  const step2Input = [{
+    role: 'user',
+    content: `${PROMPTS.extractAndTailorBlocks.system}
 
 Now, complete Step 2:
 
 ${PROMPTS.extractAndTailorBlocks.user(
-    params.resumeText,
-    params.jobDescription,
-    params.jobTitle,
-    compatibility
-  )}`
+      params.resumeText,
+      params.jobDescription,
+      params.jobTitle,
+      compatibility
+    )}`
+  }]
 
-  messages.push({ role: 'user', content: step2Prompt })
+  const step2 = await sendTurn(conversationId, step2Input, 2, 0.1)
 
-  const step2Response = await callOpenAIWithMessages(messages, 0.1, true)
-  const blocks: ExtractedBlocks = JSON.parse(step2Response)
-
-  messages.push({ role: 'assistant', content: step2Response })
+  let blocks: ExtractedBlocks
+  try {
+    blocks = JSON.parse(step2.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 2] JSON Parse Error:', parseError.message)
+    console.error('Response preview (first 500 chars):', step2.outputText.substring(0, 500))
+    console.error('Response preview (last 500 chars):', step2.outputText.substring(step2.outputText.length - 500))
+    throw new Error(`Failed to parse Step 2 extracted blocks: ${parseError.message}`)
+  }
 
   // Validation logging
   const experienceBlocks = blocks.blocks?.filter(b => b.category === 'experience') || []
@@ -502,22 +516,24 @@ ${PROMPTS.extractAndTailorBlocks.user(
   // ============================================================================
   console.log('🧠 [STEP 3/6] Calculating fit score...')
 
-  const step3Prompt = `${PROMPTS.calculateFitScore.system}
+  const step3Input = [{
+    role: 'user',
+    content: `${PROMPTS.calculateFitScore.system}
 
 Now, complete Step 3 using the blocks you just extracted:
 
-${PROMPTS.calculateFitScore.user(
-    params.resumeText,
-    blocks.blocks,
-    params.jobDescription
-  )}`
+${PROMPTS.calculateFitScore.user(params.resumeText, blocks.blocks, params.jobDescription)}`
+  }]
 
-  messages.push({ role: 'user', content: step3Prompt })
+  const step3 = await sendTurn(conversationId, step3Input, 3, 0.1)
 
-  const step3Response = await callOpenAIWithMessages(messages, 0.1, true)
-  const fitScore: FitScore = JSON.parse(step3Response)
-
-  messages.push({ role: 'assistant', content: step3Response })
+  let fitScore: FitScore
+  try {
+    fitScore = JSON.parse(step3.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 3] JSON Parse Error:', parseError.message)
+    throw new Error(`Failed to parse Step 3 fit score: ${parseError.message}`)
+  }
 
   console.log('✅ [STEP 3/6] Complete:', {
     score: fitScore.score,
@@ -529,22 +545,24 @@ ${PROMPTS.calculateFitScore.user(
   // ============================================================================
   console.log('🧠 [STEP 4/6] Detecting missing skills...')
 
-  const step4Prompt = `${PROMPTS.detectMissingSkills.system}
+  const step4Input = [{
+    role: 'user',
+    content: `${PROMPTS.detectMissingSkills.system}
 
 Now, complete Step 4:
 
-${PROMPTS.detectMissingSkills.user(
-    skillBlocks,
-    params.jobDescription,
-    params.jobTitle
-  )}`
+${PROMPTS.detectMissingSkills.user(skillBlocks, params.jobDescription, params.jobTitle)}`
+  }]
 
-  messages.push({ role: 'user', content: step4Prompt })
+  const step4 = await sendTurn(conversationId, step4Input, 4, 0.2)
 
-  const step4Response = await callOpenAIWithMessages(messages, 0.2, true)
-  const missingSkills: MissingSkillsAnalysis = JSON.parse(step4Response)
-
-  messages.push({ role: 'assistant', content: step4Response })
+  let missingSkills: MissingSkillsAnalysis
+  try {
+    missingSkills = JSON.parse(step4.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 4] JSON Parse Error:', parseError.message)
+    throw new Error(`Failed to parse Step 4 missing skills: ${parseError.message}`)
+  }
 
   console.log('✅ [STEP 4/6] Complete:', {
     missingSkillsCount: missingSkills.missingSkills?.length || 0
@@ -555,22 +573,24 @@ ${PROMPTS.detectMissingSkills.user(
   // ============================================================================
   console.log('🧠 [STEP 5/6] Generating recommendations...')
 
-  const step5Prompt = `${PROMPTS.generateRecommendations.system}
+  const step5Input = [{
+    role: 'user',
+    content: `${PROMPTS.generateRecommendations.system}
 
 Now, complete Step 5:
 
-${PROMPTS.generateRecommendations.user(
-    fitScore.score,
-    missingSkills,
-    blocks.blocks
-  )}`
+${PROMPTS.generateRecommendations.user(fitScore.score, missingSkills, blocks.blocks)}`
+  }]
 
-  messages.push({ role: 'user', content: step5Prompt })
+  const step5 = await sendTurn(conversationId, step5Input, 5, 0.2)
 
-  const step5Response = await callOpenAIWithMessages(messages, 0.2, true)
-  const recommendations: RecommendationsAnalysis = JSON.parse(step5Response)
-
-  messages.push({ role: 'assistant', content: step5Response })
+  let recommendations: RecommendationsAnalysis
+  try {
+    recommendations = JSON.parse(step5.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 5] JSON Parse Error:', parseError.message)
+    throw new Error(`Failed to parse Step 5 recommendations: ${parseError.message}`)
+  }
 
   console.log('✅ [STEP 5/6] Complete:', {
     recommendationCount: recommendations.recommendations?.length || 0
@@ -581,7 +601,9 @@ ${PROMPTS.generateRecommendations.user(
   // ============================================================================
   console.log('🧠 [STEP 6/6] Deciding layout for all extracted blocks...')
 
-  const step6Prompt = `${PROMPTS.decideLayout.system}
+  const step6Input = [{
+    role: 'user',
+    content: `${PROMPTS.decideLayout.system}
 
 Now, complete Step 6 - CRITICAL: You MUST include ALL ${blocks.blocks?.length || 0} blocks you extracted in Step 2.
 
@@ -590,18 +612,20 @@ ${blocks.blocks?.map(b => `- ${b.id} (${b.category})`).join('\n')}
 
 Your layout output MUST reference ALL of these block IDs.
 
-${PROMPTS.decideLayout.user(
-    blocks.blocks,
-    params.templateName,
-    params.templateConstraints
-  )}`
+${PROMPTS.decideLayout.user(blocks.blocks, params.templateName, params.templateConstraints)}`
+  }]
 
-  messages.push({ role: 'user', content: step6Prompt })
+  const step6 = await sendTurn(conversationId, step6Input, 6, 0.1)
 
-  const step6Response = await callOpenAIWithMessages(messages, 0.1, true)
-  const layout: LayoutDecision = JSON.parse(step6Response)
-
-  messages.push({ role: 'assistant', content: step6Response })
+  let layout: LayoutDecision
+  try {
+    layout = JSON.parse(step6.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 6] JSON Parse Error:', parseError.message)
+    console.error('Response preview (first 500 chars):', step6.outputText.substring(0, 500))
+    console.error('Response preview (last 500 chars):', step6.outputText.substring(step6.outputText.length - 500))
+    throw new Error(`Failed to parse Step 6 layout: ${parseError.message}`)
+  }
 
   // Validate layout includes all blocks
   const layoutBlockIds = [
@@ -626,6 +650,7 @@ ${PROMPTS.decideLayout.user(
   })
 
   console.log('🎉 [CONVERSATIONAL TAILORING] All 6 steps complete!')
+  console.log(`📊 [OpenAI Dashboard] View conversation: https://platform.openai.com/logs?api=responses&conversation=${conversationId}`)
 
   return {
     compatibility,
@@ -638,61 +663,161 @@ ${PROMPTS.decideLayout.user(
 }
 
 /**
- * Helper function to call OpenAI with message history
+ * Create a new conversation object on OpenAI (persists beyond 30 days)
+ * https://platform.openai.com/docs/api-reference/conversations/create
  */
-async function callOpenAIWithMessages(
-  messages: OpenAIMessage[],
-  temperature = 0.1,
-  requireJSON = true
-): Promise<string> {
-  const requestBody: OpenAIRequest = {
-    model: MODEL,
-    messages: messages,
-    temperature,
+async function createConversation(): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set')
   }
 
-  if (requireJSON) {
-    requestBody.response_format = { type: 'json_object' }
-  }
-
-  // Log conversation turn
-  const turnNumber = Math.floor((messages.length - 1) / 2) + 1
-  console.log(`[OpenAI] 📤 Turn ${turnNumber} - Sending message to API`)
-  console.log(`  - Total messages in conversation: ${messages.length}`)
-  console.log(`  - Latest user message length: ${messages[messages.length - 1].content.length} chars`)
-
-  const response = await fetch(OPENAI_API_URL, {
+  const response = await fetch('https://api.openai.com/v1/conversations', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify({})
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('[OpenAI] ❌ API ERROR:', response.status, errorText)
-    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
+    console.error('[OpenAI] ❌ Failed to create conversation:', response.status, errorText)
+    throw new Error(`Failed to create OpenAI conversation: ${response.status}`)
   }
 
-  const data: OpenAIResponse = await response.json()
+  const data = await response.json()
+  console.log(`[Conversation] ✅ Created: ${data.id}`)
+  console.log(`[Conversation] 📊 Dashboard: https://platform.openai.com/logs?api=responses&conversation=${data.id}`)
 
-  if (!data.choices || data.choices.length === 0) {
-    throw new Error('No response from OpenAI API')
+  return data.id
+}
+
+/**
+ * Send a single turn in a conversation using the Responses API
+ * https://platform.openai.com/docs/api-reference/responses/create
+ */
+async function sendTurn(
+  conversationId: string,
+  input: Array<{role: string, content: string}>,
+  turnNumber: number,
+  temperature = 0.1
+): Promise<{ id: string, outputText: string, tokens: number }> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set')
   }
 
-  const content = data.choices[0].message.content
+  // Add 90-second timeout to prevent infinite hangs
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 90000)
 
-  console.log(`[OpenAI] 📥 Turn ${turnNumber} - Received response`)
-  console.log(`  - Response length: ${content.length} chars`)
+  try {
+    console.log(`[OpenAI] 📤 Turn ${turnNumber} - Sending to Responses API`)
+    console.log(`  - Conversation ID: ${conversationId}`)
+    console.log(`  - Input messages: ${input.length}`)
+    console.log(`  - Input length: ${JSON.stringify(input).length} chars`)
 
-  // Log token usage
-  if (data.usage) {
-    console.log(`[OpenAI] 💰 Tokens: ${data.usage.total_tokens} (prompt: ${data.usage.prompt_tokens}, completion: ${data.usage.completion_tokens})`)
+    const requestBody: any = {
+      model: MODEL,
+      conversation: conversationId,
+      input: input,
+      store: true,  // Save to OpenAI Dashboard for 30 days
+      temperature: temperature,
+      text: {
+        format: {
+          type: 'json_object'  // Responses API requires text.format to be an object with type property
+        }
+      }
+    }
+
+    const requestBodySize = JSON.stringify(requestBody).length
+    console.log(`  - Request payload size: ${requestBodySize} bytes`)
+
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    })
+
+    clearTimeout(timeoutId)
+
+    console.log(`[OpenAI] ✅ Turn ${turnNumber} - Fetch completed, status: ${response.status}`)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[OpenAI] ❌ API ERROR (Turn ${turnNumber}):`, response.status, errorText)
+      throw new Error(`OpenAI Responses API error (Turn ${turnNumber}): ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+
+    if (!data.id) {
+      console.error(`[OpenAI] ❌ No response ID returned (Turn ${turnNumber})`)
+      throw new Error(`No response ID from OpenAI (Turn ${turnNumber})`)
+    }
+
+    // Extract output text (Responses API format)
+    let outputText = ''
+
+    // Debug: log the full response structure
+    console.log(`[OpenAI] 🔍 Turn ${turnNumber} - Response structure:`, JSON.stringify(data, null, 2))
+
+    if (data.output_text) {
+      // Direct output_text property
+      outputText = data.output_text
+    } else if (data.output && Array.isArray(data.output) && data.output.length > 0) {
+      // Output array format
+      const firstOutput = data.output[0]
+
+      if (firstOutput.content && Array.isArray(firstOutput.content) && firstOutput.content.length > 0) {
+        // Content is an array of content parts
+        const textContent = firstOutput.content.find((c: any) => c.type === 'output_text')
+        if (textContent && textContent.text) {
+          outputText = textContent.text
+        } else {
+          console.error(`[OpenAI] ❌ No text in content array (Turn ${turnNumber})`, firstOutput.content)
+          throw new Error(`No text content in output array (Turn ${turnNumber})`)
+        }
+      } else if (typeof firstOutput.content === 'string') {
+        // Content is a string
+        outputText = firstOutput.content
+      } else {
+        console.error(`[OpenAI] ❌ Unexpected content structure (Turn ${turnNumber})`, firstOutput)
+        throw new Error(`Unexpected content structure (Turn ${turnNumber})`)
+      }
+    } else {
+      console.error(`[OpenAI] ❌ No output content in response (Turn ${turnNumber})`, data)
+      throw new Error(`No output content from OpenAI (Turn ${turnNumber})`)
+    }
+
+    const tokens = data.usage?.total_tokens || 0
+
+    console.log(`[OpenAI] 📥 Turn ${turnNumber} - Received response`)
+    console.log(`  - Response ID: ${data.id}`)
+    console.log(`  - Output length: ${outputText.length} chars`)
+    console.log(`  - Tokens: ${tokens} (prompt: ${data.usage?.prompt_tokens || 0}, completion: ${data.usage?.completion_tokens || 0})`)
+
+    return {
+      id: data.id,
+      outputText: outputText,
+      tokens: tokens
+    }
+
+  } catch (error: any) {
+    clearTimeout(timeoutId)
+
+    if (error.name === 'AbortError') {
+      console.error(`[OpenAI] ⏱️ TIMEOUT: Turn ${turnNumber} took >90 seconds`)
+      throw new Error(`OpenAI API timeout on Turn ${turnNumber} after 90 seconds`)
+    }
+
+    // Re-throw with context
+    throw new Error(`Turn ${turnNumber} failed: ${error.message}`)
   }
-
-  return content
 }
 
 /**
