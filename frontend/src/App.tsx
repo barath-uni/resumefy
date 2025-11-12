@@ -15,6 +15,7 @@ import Terms from "./pages/Terms"
 import Support from "./pages/Support"
 import AppLayout from "./components/layout/AppLayout"
 import { analytics, initGA } from "./lib/analytics"
+import { initClarity } from "./lib/clarity"
 import { supabase } from "./lib/supabase"
 import { Toaster } from "./components/ui/toaster"
 
@@ -48,6 +49,7 @@ function App() {
   // Initialize analytics on app load
   useEffect(() => {
     initGA()
+    initClarity()
     analytics.trackLandingPageView()
   }, [])
 
