@@ -94,8 +94,8 @@ export default function DashboardPage() {
                   </p>
                   <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
                     <DialogTrigger asChild>
-                      <ShimmerButton className="h-16 px-12 text-lg font-semibold shadow-lg">
-                        <Upload className="w-6 h-6 mr-3" />Upload Resume
+                      <ShimmerButton className="h-12 sm:h-16 px-6 sm:px-12 text-base sm:text-lg font-semibold shadow-lg">
+                        <Upload className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />Upload Resume
                       </ShimmerButton>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
