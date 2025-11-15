@@ -685,7 +685,7 @@ export default function TailoringPageV2() {
             {/* Footer note */}
             <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-center text-muted-foreground">
-                💡 Please don't close this window while we tailor your resumes
+                💡 You can come back to this page in 2 minutes to view the generated resumes
               </p>
             </div>
           </div>
