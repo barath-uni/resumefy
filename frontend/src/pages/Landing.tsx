@@ -190,7 +190,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
 
                       <div className="text-center">
                         <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                          Drop your resume here or click to upload
+                          Click to upload your resume
                         </h3>
                         <p className="text-gray-600 text-lg">
                           PDF or DOCX • Get instant analysis in 2 minutes
