@@ -148,10 +148,6 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                   <br />
                   <span className="text-emerald-600">Instant role-optimized Resumes</span>
                 </h1>
-                <div className="text-xl font-semibold text-gray-700 mt-4">
-                  20 free optimizations, after which <span className="line-through text-gray-400">$19.99</span>
-                  <span className="ml-2 text-emerald-600">$14.99/month</span>
-                </div>
               </motion.div>
 
               <motion.p
@@ -169,17 +165,57 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="mb-12"
               >
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg border-0 shadow-lg hover:shadow-xl transition-all group"
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="relative cursor-pointer group"
                   onClick={() => {
                     analytics.trackUploadAttempt()
                     handleGetStarted()
                   }}
                 >
-                  Upload your resume
-                  <Upload className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
-                </Button>
-                <p className="text-sm text-gray-600 mt-3">No credit card required</p>
+                  {/* Animated gradient border */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-emerald-600 to-blue-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-x"></div>
+
+                  {/* Dropzone */}
+                  <div className="relative bg-white rounded-2xl border-4 border-dashed border-blue-300 group-hover:border-emerald-400 transition-all duration-300 p-8 shadow-xl group-hover:shadow-2xl">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-16 h-16 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg"
+                      >
+                        <Upload className="w-8 h-8 text-white" />
+                      </motion.div>
+
+                      <div className="text-center">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          Drop your resume here or click to upload
+                        </h3>
+                        <p className="text-gray-600 text-lg">
+                          PDF or DOCX • Get instant analysis in 2 minutes
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm text-gray-600">Free</span>
+                        </div>
+                        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm text-gray-600">Secure</span>
+                        </div>
+                        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm text-gray-600">2 min results</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               </motion.div>
 
               {/* Stats */}
@@ -370,7 +406,11 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: feature.delay }}
                 viewport={{ once: true }}
-                className="group relative"
+                className="group relative cursor-pointer"
+                onClick={() => {
+                  analytics.trackUploadAttempt()
+                  handleGetStarted()
+                }}
               >
                 <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group-hover:-translate-y-1 h-full">
                   <div className="flex items-center mb-6">
@@ -604,11 +644,12 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
               <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2 force-dark-text">Pro</h3>
               <div className="mb-6">
                 <div className="text-4xl font-bold text-gray-900 force-dark-text">
-                  <span className="line-through text-gray-400 text-2xl">$19.99</span>
-                  <span className="ml-2">$14.99</span>
+                  <span className="line-through text-gray-400 text-2xl">$9.99</span>
+                  <span className="ml-2">$4.99</span>
                   <span className="text-lg text-gray-600 font-normal">/month</span>
                 </div>
-                <div className="text-gray-700 text-sm mt-1 force-gray-text">Cancel anytime</div>
+                <div className="text-emerald-600 text-sm mt-1 font-medium force-dark-text">Founder pricing - Help us improve the product!</div>
+                <div className="text-gray-700 text-xs mt-1 force-gray-text">Cancel anytime</div>
               </div>
 
               <ul className="space-y-4 mb-8">
