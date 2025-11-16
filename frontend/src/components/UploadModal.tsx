@@ -30,7 +30,6 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
     description: '',
     urlStatus: 'idle'
   }])
-  const [paymentIntent, setPaymentIntent] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [isExistingUser, setIsExistingUser] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -311,41 +310,12 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
       // Track magic link sent successfully
       analytics.trackMagicLinkSent(email)
 
-      // Move to confirmation screen (step 3)
+      // Move to success screen (step 3)
       setCurrentStep(3)
 
       console.log('🎉 [UploadModal] Submission complete!')
     } catch (error: any) {
       console.error("❌ [UploadModal] Fatal error:", error)
-      alert(`Error: ${error.message || 'Something went wrong. Please try again.'}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handlePaymentIntentSubmit = async () => {
-    if (!paymentIntent) return
-
-    setIsLoading(true)
-
-    try {
-      // Save payment intent to database
-      const { error } = await supabase
-        .from('email_captures')
-        .update({ payment_intent: paymentIntent })
-        .eq('email', email)
-
-      if (error) {
-        throw error
-      }
-
-      // Track payment intent
-      analytics.trackPaymentIntent(paymentIntent)
-
-      // Move to final success screen
-      setCurrentStep(4)
-    } catch (error: any) {
-      console.error("Error saving payment intent:", error)
       alert(`Error: ${error.message || 'Something went wrong. Please try again.'}`)
     } finally {
       setIsLoading(false)
@@ -362,7 +332,6 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
       description: '',
       urlStatus: 'idle'
     }])
-    setPaymentIntent("")
     setIsLoading(false)
   }
 
@@ -395,7 +364,7 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="text-2xl font-heading font-bold text-gray-900">Resumefy</div>
-            <div className="text-sm text-gray-500">• Step {currentStep} of 4</div>
+            <div className="text-sm text-gray-500">• Step {currentStep} of 3</div>
           </div>
           <button
             onClick={handleClose}
@@ -410,8 +379,8 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
           <div className="w-full bg-gray-200 rounded-full h-2">
             <motion.div
               className="bg-gradient-to-r from-blue-600 to-emerald-600 h-2 rounded-full"
-              initial={{ width: "25%" }}
-              animate={{ width: `${(currentStep / 4) * 100}%` }}
+              initial={{ width: "33%" }}
+              animate={{ width: `${(currentStep / 3) * 100}%` }}
               transition={{ duration: 0.3 }}
             />
           </div>
@@ -640,68 +609,8 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
               </motion.div>
             )}
 
-            {/* Step 3: Confirmation + Payment Intent */}
+            {/* Step 3: Success Screen */}
             {currentStep === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -20, opacity: 0 }}
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Mail className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h2 className="text-2xl font-heading font-medium text-gray-900 mb-2">
-                    {isExistingUser ? 'Welcome back!' : 'Thanks for uploading!'}
-                  </h2>
-                  <p className="text-gray-600 mb-2">
-                    {isExistingUser
-                      ? 'A user with the email address provided already exists!'
-                      : 'We\'re tailoring your resume.'}
-                  </p>
-                  <p className="text-gray-900 font-medium">
-                    Go check your email! It has a magic link to sign you in.
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
-                  <div className="text-center">
-                    <p className="text-gray-700 font-medium mb-4">
-                      Quick question before you go:
-                    </p>
-                    <p className="text-lg font-semibold text-gray-900 mb-3">
-                      Would you consider upgrading at <span className="line-through text-gray-400">$19.99</span> <span className="text-emerald-600">$14.99/month</span> after 20 free optimizations?
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <select
-                      value={paymentIntent}
-                      onChange={(e) => setPaymentIntent(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 font-sans text-gray-900"
-                    >
-                      <option value="">Select an option...</option>
-                      <option value="yes">Yes, I'd consider it</option>
-                      <option value="maybe">Maybe, tell me more</option>
-                      <option value="no">Not now</option>
-                    </select>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handlePaymentIntentSubmit}
-                  disabled={!paymentIntent || isLoading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-0 py-3"
-                >
-                  {isLoading ? "Saving..." : "Continue"}
-                </Button>
-              </motion.div>
-            )}
-
-            {/* Step 4: Final Success */}
-            {currentStep === 4 && (
               <motion.div
                 key="step4"
                 initial={{ x: 20, opacity: 0 }}
