@@ -31,7 +31,6 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
     urlStatus: 'idle'
   }])
   const [isLoading, setIsLoading] = useState(false)
-  const [isExistingUser, setIsExistingUser] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,7 +267,6 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
           signUpData?.user?.identities?.length === 0) {
 
         console.log('👤 [UploadModal] User already exists, sending sign-in magic link...')
-        setIsExistingUser(true)
 
         // Send magic link for existing user
         const { error: signInError } = await supabase.auth.signInWithOtp({
