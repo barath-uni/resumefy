@@ -511,7 +511,11 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 whileInView={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="group relative"
+                className="group relative cursor-pointer"
+                onClick={() => {
+                  analytics.trackUploadAttempt()
+                  handleGetStarted()
+                }}
               >
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1 h-full">
                   {/* Step number */}
