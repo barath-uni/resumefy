@@ -50,7 +50,416 @@ Be specific and actionable. Reference actual content from the resume and JD.`
   },
 
   /**
-   * STEP 2: Extract and Tailor Resume Content Blocks
+   * STEP 2A: Extract Raw Resume Content Blocks (NO TAILORING)
+   * Purpose: Extract ALL content from resume verbatim - no rewriting, no JD analysis
+   * This is a pure extraction step that preserves 100% of the original content
+   */
+  extractBlocksRaw: {
+    system: `You are a resume content extractor. Your ONLY job is to extract ALL content from a resume into structured JSON blocks.
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL: THIS IS PURE EXTRACTION - NO TAILORING, NO REWRITING 🚨   ║
+║                                                                           ║
+║  ✅ CORRECT EXTRACTION:                                                  ║
+║     • Copy text EXACTLY as written in the resume                         ║
+║     • Extract EVERY section completely                                   ║
+║     • Preserve original wording, dates, company names                    ║
+║     • Do NOT analyze job descriptions                                    ║
+║     • Do NOT rewrite bullets                                             ║
+║     • Do NOT assign priorities                                           ║
+║     • Do NOT skip any content                                            ║
+║                                                                           ║
+║  ❌ WRONG (DO NOT DO THIS):                                              ║
+║     • Rewriting bullets to match job keywords                            ║
+║     • Filtering out "less relevant" content                              ║
+║     • Analyzing which skills are important                               ║
+║     • Merging or condensing bullets                                      ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+EXTRACTION RULES:
+1. Extract EVERY section: contact, summary, experience, education, skills, projects, certifications
+2. Copy text VERBATIM - do not change wording
+3. Extract ALL experience bullets (100% of them)
+4. Extract ALL skills (every single one)
+5. Extract ALL projects, ALL education entries, ALL certifications
+6. Do NOT assign priority scores (tailoring step will do this)
+7. Do NOT analyze job descriptions
+8. Do NOT rewrite content
+
+EXAMPLE - Original Resume Bullet:
+"Built web app using React"
+
+✅ CORRECT EXTRACTION:
+"Built web app using React"  // Exact copy
+
+❌ WRONG EXTRACTION:
+"Developed scalable web application using React framework"  // ❌ This is rewriting!
+
+Your job is ONLY to structure the resume content into JSON blocks. Nothing more.`,
+
+    user: (resumeText: string) => `
+RESUME TEXT:
+${resumeText}
+
+TASK: Extract ALL content from this resume into structured blocks.
+
+🔍 BEFORE YOU START - MANDATORY COUNTING:
+Count these in the resume:
+1. How many EXPERIENCE jobs? (Count all job titles)
+2. How many total EXPERIENCE bullets? (Count every bullet point)
+3. How many PROJECTS? (Count each project by name)
+4. How many SKILLS? (Count every skill, tool, language)
+5. How many EDUCATION entries? (Bachelor's, Master's, PhD - count each)
+6. How many CERTIFICATIONS? (If any)
+
+Your extraction MUST include 100% of these items.
+
+EXTRACTION INSTRUCTIONS:
+1. CONTACT: Extract name, email, phone, location, linkedin, github
+2. SUMMARY: Extract professional summary paragraph exactly as written
+3. EXPERIENCE: Extract ALL jobs with ALL bullets (100% - do not drop any!)
+4. EDUCATION: Extract ALL degrees (Bachelor's + Master's + PhD if present)
+5. SKILLS: Extract EVERY skill as a flat array ["skill1", "skill2", ...]
+6. PROJECTS: Extract EVERY project with title, description, bullets, technologies
+7. CERTIFICATIONS: Extract all certifications if present
+
+⚠️ DO NOT:
+- Rewrite any text
+- Filter out content
+- Assign priority scores
+- Analyze relevance
+- Reference job descriptions
+
+Return JSON with this structure:
+{
+  "blocks": [
+    {
+      "id": "contact-1",
+      "category": "contact",
+      "content": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+1234567890",
+        "location": "San Francisco, CA",
+        "linkedin": "linkedin.com/in/johndoe",
+        "github": "github.com/johndoe"
+      }
+    },
+    {
+      "id": "summary-1",
+      "category": "summary",
+      "content": {
+        "text": "Original summary text exactly as written in resume..."
+      }
+    },
+    {
+      "id": "experience-1",
+      "category": "experience",
+      "content": {
+        "title": "Senior Software Engineer",
+        "company": "Tech Corp",
+        "location": "San Francisco, CA",
+        "startDate": "Jan 2020",
+        "endDate": "Present",
+        "bullets": [
+          "Original bullet 1 exactly as written...",
+          "Original bullet 2 exactly as written...",
+          "Original bullet 3 exactly as written..."
+        ]
+      }
+    },
+    {
+      "id": "education-1",
+      "category": "education",
+      "content": {
+        "degree": "Bachelor of Science in Computer Science",
+        "school": "State University",
+        "location": "City, State",
+        "graduationDate": "May 2018",
+        "gpa": "3.8/4.0",
+        "honors": "Magna Cum Laude"
+      }
+    },
+    {
+      "id": "skills-1",
+      "category": "skills",
+      "content": ["Python", "Java", "Docker", "AWS", "React", "SQL"]
+    },
+    {
+      "id": "projects-1",
+      "category": "projects",
+      "content": {
+        "title": "E-commerce Platform",
+        "description": "Original description exactly as written...",
+        "bullets": [
+          "Original project bullet 1...",
+          "Original project bullet 2..."
+        ],
+        "technologies": ["Python", "React", "PostgreSQL"],
+        "link": "github.com/user/project"
+      }
+    },
+    {
+      "id": "certifications-1",
+      "category": "certifications",
+      "content": {
+        "title": "AWS Certified Solutions Architect",
+        "issuer": "Amazon Web Services",
+        "date": "2022",
+        "credentialId": "ABC123"
+      }
+    }
+  ],
+  "detectedCategories": ["contact", "summary", "experience", "education", "skills", "projects", "certifications"]
+}
+
+VERIFICATION BEFORE SUBMITTING:
+☐ Did I extract 100% of all experience bullets?
+☐ Did I extract 100% of all skills?
+☐ Did I extract ALL education entries?
+☐ Did I extract ALL projects?
+☐ Did I copy text EXACTLY as written (no rewriting)?
+☐ Did I avoid assigning any priority scores?
+
+Available categories: contact, summary, experience, education, skills, certifications, projects, awards, publications, volunteer, languages, interests`
+  },
+
+  /**
+   * STEP 2B: Tailor Extracted Blocks (REWRITING ONLY)
+   * Purpose: Take raw extracted blocks and tailor them for a specific job
+   * This is the ONLY step that rewrites content - it preserves structure but optimizes wording
+   */
+  tailorExtractedBlocks: {
+    system: `You are a resume tailoring expert. You take already-extracted resume blocks and optimize them for a specific job.
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL: PRESERVE 100% OF STRUCTURE, REWRITE CONTENT ONLY 🚨        ║
+║                                                                           ║
+║  ✅ WHAT YOU SHOULD DO:                                                  ║
+║     • REWRITE bullets using job description keywords                     ║
+║     • ASSIGN priority scores (1-10) for ordering                         ║
+║     • QUANTIFY achievements with metrics where possible                  ║
+║     • EMPHASIZE relevant experience                                      ║
+║     • PRESERVE exact same number of blocks as input                      ║
+║                                                                           ║
+║  ❌ WHAT YOU MUST NOT DO:                                                ║
+║     • Delete or merge blocks                                             ║
+║     • Remove bullets (keep all bullets from input)                       ║
+║     • Filter out skills or projects                                      ║
+║     • Change the structure of the resume                                 ║
+║     • Drop education entries                                             ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+TAILORING RULES:
+1. Input has N blocks → Output must have N blocks (same block IDs)
+2. Experience block has 5 bullets → Output must have 5 bullets (rewritten)
+3. Skills array has 20 items → Output must have 20 items (same skills, reordered)
+4. Projects has 3 entries → Output must have 3 entries (rewritten descriptions)
+5. Every block gets a priority score (1-10) based on relevance
+6. Rewrite bullets to match job description terminology
+7. Add metrics and quantification where possible
+8. Never delete, merge, or filter content
+
+EXAMPLE - Input Block (from Step 2A):
+{
+  "id": "experience-1",
+  "category": "experience",
+  "content": {
+    "title": "Software Engineer",
+    "company": "Tech Corp",
+    "bullets": [
+      "Built web app using React",
+      "Worked with team on features",
+      "Fixed bugs"
+    ]
+  }
+}
+
+Job Description: "Seeking Senior React Developer with experience in scalable web applications"
+
+✅ CORRECT TAILORING:
+{
+  "id": "experience-1",  // Same ID
+  "category": "experience",
+  "priority": 10,  // Added priority
+  "content": {
+    "title": "Software Engineer",
+    "company": "Tech Corp",
+    "bullets": [  // Same 3 bullets, but rewritten
+      "Developed scalable web application using React framework, serving 100K+ daily active users",
+      "Collaborated with cross-functional team of 5 engineers to deliver new features on 2-week sprints",
+      "Resolved 50+ production bugs, reducing customer-reported issues by 30%"
+    ]
+  }
+}
+
+❌ WRONG TAILORING:
+{
+  "id": "experience-1",
+  "priority": 10,
+  "content": {
+    "bullets": [
+      "Built web app using React"  // ❌ Only 1 bullet - dropped 2 bullets!
+    ]
+  }
+}
+
+Priority scoring guide:
+- 10: Highly relevant to job (matches key requirements)
+- 8-9: Relevant (matches some requirements)
+- 6-7: Moderately relevant (transferable skills)
+- 4-5: Less relevant but valuable
+- 1-3: Least relevant but still included`,
+
+    user: (rawBlocks: any, jobDescription: string, jobTitle: string, compatibilityInsights: any) => `
+JOB TITLE: ${jobTitle}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+COMPATIBILITY ANALYSIS:
+${JSON.stringify(compatibilityInsights, null, 2)}
+
+RAW EXTRACTED BLOCKS (from Step 2A):
+${JSON.stringify(rawBlocks, null, 2)}
+
+TASK: Tailor these blocks for this job by rewriting content and assigning priorities.
+
+🔍 BEFORE YOU START - MANDATORY COUNTING:
+Count the input blocks:
+1. How many total blocks in the input?
+2. How many experience blocks?
+3. For each experience block, how many bullets?
+4. How many skills in the skills block?
+5. How many projects blocks?
+6. How many education blocks?
+
+Your output MUST match these exact counts.
+
+TAILORING INSTRUCTIONS:
+1. For EACH block in the input:
+   a. Keep the same block ID
+   b. Assign a priority score (1-10) based on relevance to job
+   c. Rewrite content using job description keywords
+   d. Preserve the exact number of bullets/items
+
+2. Use compatibility analysis to guide priorities:
+   - OVERLAP AREAS → Priority 9-10 (most relevant)
+   - STRATEGIC FOCUS → Priority 8-9 (emphasize these)
+   - Other content → Priority 4-7 (still include!)
+
+3. For EXPERIENCE bullets:
+   - Rewrite using job description terminology
+   - Add metrics and quantification where possible
+   - Keep the SAME NUMBER of bullets per job
+
+4. For SKILLS:
+   - Keep ALL skills from input
+   - Reorder with most relevant first
+   - Same total count as input
+
+5. For PROJECTS:
+   - Rewrite descriptions to emphasize relevant technologies
+   - Keep ALL projects from input
+   - Add impact metrics where possible
+
+6. For EDUCATION:
+   - Keep all education entries from input
+   - Assign priority (recent/relevant = higher)
+
+VERIFICATION BEFORE SUBMITTING:
+☐ Output block count = Input block count?
+☐ Each experience block has same number of bullets as input?
+☐ Skills array has same number of items as input?
+☐ All projects from input are in output?
+☐ All education entries from input are in output?
+☐ Every block has a priority score (1-10)?
+
+Return JSON with this structure:
+{
+  "blocks": [
+    {
+      "id": "contact-1",  // Same ID as input
+      "category": "contact",
+      "priority": 10,  // Added priority
+      "content": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+1234567890",
+        "location": "San Francisco, CA",
+        "linkedin": "linkedin.com/in/johndoe",
+        "github": "github.com/johndoe"
+      }
+    },
+    {
+      "id": "summary-1",
+      "category": "summary",
+      "priority": 9,
+      "content": {
+        "text": "Rewritten summary optimized for this job using JD keywords..."
+      }
+    },
+    {
+      "id": "experience-1",
+      "category": "experience",
+      "priority": 10,
+      "content": {
+        "title": "Senior Software Engineer",
+        "company": "Tech Corp",
+        "location": "San Francisco, CA",
+        "startDate": "Jan 2020",
+        "endDate": "Present",
+        "bullets": [  // Same count as input, but rewritten
+          "Rewritten bullet 1 with JD keywords and metrics...",
+          "Rewritten bullet 2 emphasizing relevant experience...",
+          "Rewritten bullet 3 quantifying impact..."
+        ]
+      }
+    },
+    {
+      "id": "education-1",
+      "category": "education",
+      "priority": 7,
+      "content": {
+        "degree": "Bachelor of Science in Computer Science",
+        "school": "State University",
+        "location": "City, State",
+        "graduationDate": "May 2018",
+        "gpa": "3.8/4.0",
+        "honors": "Magna Cum Laude"
+      }
+    },
+    {
+      "id": "skills-1",
+      "category": "skills",
+      "priority": 9,
+      "content": ["Python", "Azure", "Docker", "AWS", "React", "Java", "SQL"]  // Reordered, same count
+    },
+    {
+      "id": "projects-1",
+      "category": "projects",
+      "priority": 8,
+      "content": {
+        "title": "E-commerce Platform",
+        "description": "Rewritten description emphasizing relevant technologies...",
+        "bullets": [  // Same count as input, but rewritten
+          "Rewritten project bullet 1 with impact metrics...",
+          "Rewritten project bullet 2 highlighting JD-relevant skills..."
+        ],
+        "technologies": ["Python", "React", "PostgreSQL"],
+        "link": "github.com/user/project"
+      }
+    }
+  ],
+  "detectedCategories": ["contact", "summary", "experience", "education", "skills", "projects"]
+}
+
+Priority scores are for ORDERING only - ALL blocks get rendered in the final resume!`
+  },
+
+  /**
+   * STEP 2 (LEGACY): Extract and Tailor Resume Content Blocks
+   * ⚠️ DEPRECATED: This combined step is being replaced by Step 2A + 2B
    * Purpose: Convert resume into flexible blocks, optimize for the specific job
    */
   extractAndTailorBlocks: {
@@ -577,6 +986,18 @@ export interface CompatibilityAnalysis {
   overlapAreas: string[]
   gapAreas: string[]
   strategicFocus: string[]
+}
+
+export interface RawContentBlock {
+  id: string
+  category: string
+  content: Record<string, any>
+  // Note: No priority field - priorities are assigned in Step 2B
+}
+
+export interface RawExtractedBlocks {
+  blocks: RawContentBlock[]
+  detectedCategories: string[]
 }
 
 export interface ContentBlock {
