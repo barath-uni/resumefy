@@ -6,6 +6,7 @@
 import {
   PROMPTS,
   type CompatibilityAnalysis,
+  type RawExtractedBlocks,
   type ExtractedBlocks,
   type FitScore,
   type MissingSkillsAnalysis,
@@ -150,7 +151,154 @@ export async function analyzeCompatibility(params: {
 }
 
 /**
- * STEP 2: Extract and tailor content blocks
+ * STEP 2A: Extract raw content blocks (NO TAILORING)
+ * Pure extraction - copies all content verbatim without rewriting or JD analysis
+ */
+export async function extractBlocksRaw(params: {
+  resumeText: string
+}): Promise<RawExtractedBlocks> {
+  console.log('[AI] Step 2A: Extracting raw content blocks (no tailoring)...')
+
+  // 🔍 CRITICAL LOGGING: Log resume text statistics
+  console.log('🔍 [DEBUG] RESUME TEXT ANALYSIS:')
+  console.log(`  - Resume text length: ${params.resumeText.length} chars`)
+  console.log(`  - Resume text first 300 chars: ${params.resumeText.substring(0, 300)}`)
+  console.log(`  - Resume text last 300 chars: ...${params.resumeText.substring(params.resumeText.length - 300)}`)
+
+  // Check for key sections in original resume
+  const hasSkillsSection = params.resumeText.toLowerCase().includes('skill')
+  const hasProjectsSection = params.resumeText.toLowerCase().includes('project')
+  const hasEducationSection = params.resumeText.toLowerCase().includes('education')
+  console.log(`  - Contains "skill" keyword: ${hasSkillsSection}`)
+  console.log(`  - Contains "project" keyword: ${hasProjectsSection}`)
+  console.log(`  - Contains "education" keyword: ${hasEducationSection}`)
+
+  const result = await callOpenAI(
+    PROMPTS.extractBlocksRaw.system,
+    PROMPTS.extractBlocksRaw.user(params.resumeText),
+    0.1,
+    true
+  )
+
+  // 🔍 DETAILED VALIDATION: Check content extraction
+  console.log('🔍 [DEBUG] RAW EXTRACTED BLOCKS ANALYSIS:')
+  console.log(`  - Total blocks extracted: ${result.blocks?.length || 0}`)
+  console.log(`  - Detected categories: ${JSON.stringify(result.detectedCategories || [])}`)
+
+  const experienceBlocks = result.blocks?.filter(b => b.category === 'experience') || []
+  const totalBullets = experienceBlocks.reduce((sum, exp) => {
+    return sum + (exp.content.bullets?.length || 0)
+  }, 0)
+
+  const projectBlocks = result.blocks?.filter(b => b.category === 'projects') || []
+  const skillBlocks = result.blocks?.filter(b => b.category === 'skills') || []
+  const educationBlocks = result.blocks?.filter(b => b.category === 'education') || []
+
+  console.log(`  - Experience blocks: ${experienceBlocks.length}, Total bullets: ${totalBullets}`)
+  console.log(`  - Project blocks: ${projectBlocks.length}`)
+  console.log(`  - Skill blocks: ${skillBlocks.length}`)
+  console.log(`  - Education blocks: ${educationBlocks.length}`)
+
+  // Validation warnings
+  if (totalBullets < 5) {
+    console.warn(`⚠️ [AI] Low bullet count detected in raw extraction: ${totalBullets}`)
+  }
+
+  if (hasSkillsSection && skillBlocks.length === 0) {
+    console.error('❌ [CRITICAL] Resume contains SKILLS section but NONE were extracted by AI!')
+  }
+
+  if (hasProjectsSection && projectBlocks.length === 0) {
+    console.error('❌ [CRITICAL] Resume contains PROJECTS section but NONE were extracted by AI!')
+  }
+
+  console.log('[AI] Step 2A complete:', {
+    blockCount: result.blocks?.length || 0,
+    categories: result.detectedCategories || [],
+    experienceBullets: totalBullets,
+    projects: projectBlocks.length,
+    skillCategories: skillBlocks.length,
+    education: educationBlocks.length
+  })
+
+  return result
+}
+
+/**
+ * STEP 2B: Tailor extracted blocks (REWRITING ONLY)
+ * Takes raw blocks from Step 2A and tailors them for a specific job
+ * Preserves 100% of structure, only rewrites content and assigns priorities
+ */
+export async function tailorExtractedBlocks(params: {
+  rawBlocks: RawExtractedBlocks
+  jobDescription: string
+  jobTitle: string
+  compatibilityInsights: CompatibilityAnalysis
+}): Promise<ExtractedBlocks> {
+  console.log('[AI] Step 2B: Tailoring extracted blocks...')
+
+  console.log('🔍 [DEBUG] INPUT TO TAILORING:')
+  console.log(`  - Raw blocks count: ${params.rawBlocks.blocks?.length || 0}`)
+  console.log(`  - Categories: ${JSON.stringify(params.rawBlocks.detectedCategories || [])}`)
+
+  const result = await callOpenAI(
+    PROMPTS.tailorExtractedBlocks.system,
+    PROMPTS.tailorExtractedBlocks.user(
+      params.rawBlocks,
+      params.jobDescription,
+      params.jobTitle,
+      params.compatibilityInsights
+    ),
+    0.1,
+    true
+  )
+
+  // 🔍 DETAILED VALIDATION: Verify structure preservation
+  console.log('🔍 [DEBUG] TAILORED BLOCKS ANALYSIS:')
+  console.log(`  - Total blocks after tailoring: ${result.blocks?.length || 0}`)
+  console.log(`  - Input blocks: ${params.rawBlocks.blocks?.length || 0}`)
+
+  const inputBlockCount = params.rawBlocks.blocks?.length || 0
+  const outputBlockCount = result.blocks?.length || 0
+
+  if (inputBlockCount !== outputBlockCount) {
+    console.error(`❌ [CRITICAL] Block count mismatch! Input: ${inputBlockCount}, Output: ${outputBlockCount}`)
+    console.error('  - Some blocks were dropped during tailoring!')
+  }
+
+  // Verify each block has a priority
+  const blocksWithoutPriority = result.blocks?.filter(b => !b.priority) || []
+  if (blocksWithoutPriority.length > 0) {
+    console.error(`❌ [CRITICAL] ${blocksWithoutPriority.length} blocks missing priority scores!`)
+  }
+
+  const experienceBlocks = result.blocks?.filter(b => b.category === 'experience') || []
+  const totalBullets = experienceBlocks.reduce((sum, exp) => {
+    return sum + (exp.content.bullets?.length || 0)
+  }, 0)
+
+  const projectBlocks = result.blocks?.filter(b => b.category === 'projects') || []
+  const skillBlocks = result.blocks?.filter(b => b.category === 'skills') || []
+  const educationBlocks = result.blocks?.filter(b => b.category === 'education') || []
+
+  console.log(`  - Experience blocks: ${experienceBlocks.length}, Total bullets: ${totalBullets}`)
+  console.log(`  - Project blocks: ${projectBlocks.length}`)
+  console.log(`  - Skill blocks: ${skillBlocks.length}`)
+  console.log(`  - Education blocks: ${educationBlocks.length}`)
+
+  console.log('[AI] Step 2B complete:', {
+    blockCount: result.blocks?.length || 0,
+    categories: result.detectedCategories || [],
+    structurePreserved: inputBlockCount === outputBlockCount,
+    allHavePriorities: blocksWithoutPriority.length === 0
+  })
+
+  return result
+}
+
+/**
+ * STEP 2 (LEGACY): Extract and tailor content blocks
+ * ⚠️ DEPRECATED: This function is being replaced by Step 2A + 2B
  */
 export async function extractAndTailorBlocks(params: {
   resumeText: string
@@ -370,8 +518,16 @@ export async function decideLayout(params: {
 }
 
 /**
- * NEW CONVERSATIONAL FLOW: Single conversation with 6 steps maintaining full context
- * This replaces the 6 separate API calls to prevent information loss between steps
+ * NEW CONVERSATIONAL FLOW: Single conversation with 7 steps maintaining full context
+ * This replaces the old 6-step flow with a split extraction + tailoring approach
+ *
+ * STEP 1: Analyze compatibility
+ * STEP 2A: Extract raw blocks (no JD, no rewriting)
+ * STEP 2B: Tailor blocks (rewrite with JD keywords, assign priorities)
+ * STEP 3: Calculate fit score
+ * STEP 4: Detect missing skills
+ * STEP 5: Generate recommendations
+ * STEP 6: Decide layout
  */
 export async function conversationalTailoring(params: {
   resumeText: string
@@ -381,13 +537,14 @@ export async function conversationalTailoring(params: {
   templateConstraints: any
 }): Promise<{
   compatibility: CompatibilityAnalysis
+  rawBlocks: RawExtractedBlocks
   blocks: ExtractedBlocks
   fitScore: FitScore
   missingSkills: MissingSkillsAnalysis
   recommendations: RecommendationsAnalysis
   layout: LayoutDecision
 }> {
-  console.log('🚀 [CONVERSATIONAL TAILORING] Starting with OpenAI Responses API...')
+  console.log('🚀 [CONVERSATIONAL TAILORING] Starting with OpenAI Responses API (7 steps)...')
 
   if (!OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY environment variable is not set')
@@ -397,28 +554,29 @@ export async function conversationalTailoring(params: {
   const conversationId = await createConversation()
 
   // Master system prompt that stays consistent throughout conversation
-  const masterSystemPrompt = `You are an expert resume tailoring AI assistant. You will help analyze a resume against a job description and tailor it through 6 sequential steps.
+  const masterSystemPrompt = `You are an expert resume tailoring AI assistant. You will help analyze a resume against a job description and tailor it through 7 sequential steps.
 
 CRITICAL RULES THROUGHOUT ALL STEPS:
-1. PRESERVE ALL CONTENT - Do not remove sections, skills, projects, or education
+1. PRESERVE 100% OF CONTENT - Do not remove sections, skills, projects, or education
 2. MAINTAIN CONTEXT - Remember what you extracted in previous steps
-3. BE CONSISTENT - If you extract a block in Step 2, include it in Step 6 layout
-4. PRESERVE 85%+ of original content - Reorder and rewrite, don't delete
+3. BE CONSISTENT - If you extract a block in Step 2A, it must appear in Step 2B and Step 6 layout
+4. SEPARATION OF CONCERNS - Step 2A extracts verbatim, Step 2B rewrites
 
 You will be asked to complete these steps in order:
 - Step 1: Analyze compatibility between resume and job
-- Step 2: Extract ALL sections from resume (contact, experience, education, skills, projects, etc.)
+- Step 2A: Extract ALL sections from resume VERBATIM (no rewriting, no JD analysis)
+- Step 2B: Tailor the extracted blocks using job description keywords (preserve all blocks)
 - Step 3: Calculate fit score based on tailored blocks
 - Step 4: Identify missing skills with learning suggestions
 - Step 5: Generate recommendations for improvement
-- Step 6: Create layout including ALL blocks from Step 2
+- Step 6: Create layout including ALL blocks from Step 2B
 
 Each step builds on the previous ones. Maintain consistency across all steps.`
 
   // ============================================================================
   // STEP 1: Analyze Compatibility
   // ============================================================================
-  console.log('🧠 [STEP 1/6] Analyzing compatibility...')
+  console.log('🧠 [STEP 1/7] Analyzing compatibility...')
 
   const step1Input = [
     { role: 'system', content: masterSystemPrompt },
@@ -440,16 +598,16 @@ Each step builds on the previous ones. Maintain consistency across all steps.`
     throw new Error(`Failed to parse Step 1 compatibility analysis: ${parseError.message}`)
   }
 
-  console.log('✅ [STEP 1/6] Complete:', {
+  console.log('✅ [STEP 1/7] Complete:', {
     overlaps: compatibility.overlapAreas?.length || 0,
     gaps: compatibility.gapAreas?.length || 0,
     focus: compatibility.strategicFocus?.length || 0
   })
 
   // ============================================================================
-  // STEP 2: Extract and Tailor Blocks (MOST CRITICAL - PRESERVES CONTENT)
+  // STEP 2A: Extract Raw Blocks (NO TAILORING - PURE EXTRACTION)
   // ============================================================================
-  console.log('🧠 [STEP 2/6] Extracting and tailoring content blocks...')
+  console.log('🧠 [STEP 2A/7] Extracting raw content blocks (no tailoring)...')
 
   // Log resume analysis
   console.log('🔍 [DEBUG] RESUME TEXT ANALYSIS:')
@@ -458,30 +616,83 @@ Each step builds on the previous ones. Maintain consistency across all steps.`
   console.log(`  - Has projects: ${params.resumeText.toLowerCase().includes('project')}`)
   console.log(`  - Has education: ${params.resumeText.toLowerCase().includes('education')}`)
 
-  const step2Input = [{
+  const step2AInput = [{
     role: 'user',
-    content: `${PROMPTS.extractAndTailorBlocks.system}
+    content: `${PROMPTS.extractBlocksRaw.system}
 
-Now, complete Step 2:
+Now, complete Step 2A:
 
-${PROMPTS.extractAndTailorBlocks.user(
-      params.resumeText,
+${PROMPTS.extractBlocksRaw.user(params.resumeText)}`
+  }]
+
+  const step2A = await sendTurn(conversationId, step2AInput, 2, 0.1)
+
+  let rawBlocks: RawExtractedBlocks
+  try {
+    rawBlocks = JSON.parse(step2A.outputText)
+  } catch (parseError: any) {
+    console.error('❌ [STEP 2A] JSON Parse Error:', parseError.message)
+    console.error('Response preview (first 500 chars):', step2A.outputText.substring(0, 500))
+    console.error('Response preview (last 500 chars):', step2A.outputText.substring(step2A.outputText.length - 500))
+    throw new Error(`Failed to parse Step 2A raw extracted blocks: ${parseError.message}`)
+  }
+
+  // Validation logging
+  const rawExperienceBlocks = rawBlocks.blocks?.filter(b => b.category === 'experience') || []
+  const rawTotalBullets = rawExperienceBlocks.reduce((sum, exp) => sum + (exp.content.bullets?.length || 0), 0)
+  const rawProjectBlocks = rawBlocks.blocks?.filter(b => b.category === 'projects') || []
+  const rawSkillBlocks = rawBlocks.blocks?.filter(b => b.category === 'skills') || []
+  const rawEducationBlocks = rawBlocks.blocks?.filter(b => b.category === 'education') || []
+
+  console.log('✅ [STEP 2A/7] Complete:', {
+    totalBlocks: rawBlocks.blocks?.length || 0,
+    categories: rawBlocks.detectedCategories,
+    experienceBlocks: rawExperienceBlocks.length,
+    experienceBullets: rawTotalBullets,
+    projectBlocks: rawProjectBlocks.length,
+    skillBlocks: rawSkillBlocks.length,
+    educationBlocks: rawEducationBlocks.length
+  })
+
+  if (rawTotalBullets < 5) {
+    console.warn(`⚠️ Low bullet count in raw extraction: ${rawTotalBullets}`)
+  }
+  if (params.resumeText.toLowerCase().includes('skill') && rawSkillBlocks.length === 0) {
+    console.error('❌ CRITICAL: Resume has SKILLS but none extracted in Step 2A!')
+  }
+  if (params.resumeText.toLowerCase().includes('project') && rawProjectBlocks.length === 0) {
+    console.error('❌ CRITICAL: Resume has PROJECTS but none extracted in Step 2A!')
+  }
+
+  // ============================================================================
+  // STEP 2B: Tailor Extracted Blocks (REWRITING ONLY)
+  // ============================================================================
+  console.log('🧠 [STEP 2B/7] Tailoring extracted blocks...')
+
+  const step2BInput = [{
+    role: 'user',
+    content: `${PROMPTS.tailorExtractedBlocks.system}
+
+Now, complete Step 2B using the blocks you extracted in Step 2A:
+
+${PROMPTS.tailorExtractedBlocks.user(
+      rawBlocks,
       params.jobDescription,
       params.jobTitle,
       compatibility
     )}`
   }]
 
-  const step2 = await sendTurn(conversationId, step2Input, 2, 0.1)
+  const step2B = await sendTurn(conversationId, step2BInput, 3, 0.1)
 
   let blocks: ExtractedBlocks
   try {
-    blocks = JSON.parse(step2.outputText)
+    blocks = JSON.parse(step2B.outputText)
   } catch (parseError: any) {
-    console.error('❌ [STEP 2] JSON Parse Error:', parseError.message)
-    console.error('Response preview (first 500 chars):', step2.outputText.substring(0, 500))
-    console.error('Response preview (last 500 chars):', step2.outputText.substring(step2.outputText.length - 500))
-    throw new Error(`Failed to parse Step 2 extracted blocks: ${parseError.message}`)
+    console.error('❌ [STEP 2B] JSON Parse Error:', parseError.message)
+    console.error('Response preview (first 500 chars):', step2B.outputText.substring(0, 500))
+    console.error('Response preview (last 500 chars):', step2B.outputText.substring(step2B.outputText.length - 500))
+    throw new Error(`Failed to parse Step 2B tailored blocks: ${parseError.message}`)
   }
 
   // Validation logging
@@ -491,41 +702,39 @@ ${PROMPTS.extractAndTailorBlocks.user(
   const skillBlocks = blocks.blocks?.filter(b => b.category === 'skills') || []
   const educationBlocks = blocks.blocks?.filter(b => b.category === 'education') || []
 
-  console.log('✅ [STEP 2/6] Complete:', {
+  console.log('✅ [STEP 2B/7] Complete:', {
     totalBlocks: blocks.blocks?.length || 0,
     categories: blocks.detectedCategories,
     experienceBlocks: experienceBlocks.length,
     experienceBullets: totalBullets,
     projectBlocks: projectBlocks.length,
     skillBlocks: skillBlocks.length,
-    educationBlocks: educationBlocks.length
+    educationBlocks: educationBlocks.length,
+    structurePreserved: rawBlocks.blocks?.length === blocks.blocks?.length
   })
 
   if (totalBullets < 5) {
-    console.warn(`⚠️ Low bullet count: ${totalBullets}`)
+    console.warn(`⚠️ Low bullet count after tailoring: ${totalBullets}`)
   }
-  if (params.resumeText.toLowerCase().includes('skill') && skillBlocks.length === 0) {
-    console.error('❌ CRITICAL: Resume has SKILLS but none extracted!')
-  }
-  if (params.resumeText.toLowerCase().includes('project') && projectBlocks.length === 0) {
-    console.error('❌ CRITICAL: Resume has PROJECTS but none extracted!')
+  if (rawBlocks.blocks?.length !== blocks.blocks?.length) {
+    console.error(`❌ CRITICAL: Block count mismatch! Raw: ${rawBlocks.blocks?.length}, Tailored: ${blocks.blocks?.length}`)
   }
 
   // ============================================================================
   // STEP 3: Calculate Fit Score
   // ============================================================================
-  console.log('🧠 [STEP 3/6] Calculating fit score...')
+  console.log('🧠 [STEP 3/7] Calculating fit score...')
 
   const step3Input = [{
     role: 'user',
     content: `${PROMPTS.calculateFitScore.system}
 
-Now, complete Step 3 using the blocks you just extracted:
+Now, complete Step 3 using the tailored blocks from Step 2B:
 
 ${PROMPTS.calculateFitScore.user(params.resumeText, blocks.blocks, params.jobDescription)}`
   }]
 
-  const step3 = await sendTurn(conversationId, step3Input, 3, 0.1)
+  const step3 = await sendTurn(conversationId, step3Input, 4, 0.1)
 
   let fitScore: FitScore
   try {
@@ -535,7 +744,7 @@ ${PROMPTS.calculateFitScore.user(params.resumeText, blocks.blocks, params.jobDes
     throw new Error(`Failed to parse Step 3 fit score: ${parseError.message}`)
   }
 
-  console.log('✅ [STEP 3/6] Complete:', {
+  console.log('✅ [STEP 3/7] Complete:', {
     score: fitScore.score,
     breakdown: fitScore.breakdown
   })
@@ -543,7 +752,7 @@ ${PROMPTS.calculateFitScore.user(params.resumeText, blocks.blocks, params.jobDes
   // ============================================================================
   // STEP 4: Detect Missing Skills
   // ============================================================================
-  console.log('🧠 [STEP 4/6] Detecting missing skills...')
+  console.log('🧠 [STEP 4/7] Detecting missing skills...')
 
   const step4Input = [{
     role: 'user',
@@ -554,7 +763,7 @@ Now, complete Step 4:
 ${PROMPTS.detectMissingSkills.user(skillBlocks, params.jobDescription, params.jobTitle)}`
   }]
 
-  const step4 = await sendTurn(conversationId, step4Input, 4, 0.2)
+  const step4 = await sendTurn(conversationId, step4Input, 5, 0.2)
 
   let missingSkills: MissingSkillsAnalysis
   try {
@@ -564,14 +773,14 @@ ${PROMPTS.detectMissingSkills.user(skillBlocks, params.jobDescription, params.jo
     throw new Error(`Failed to parse Step 4 missing skills: ${parseError.message}`)
   }
 
-  console.log('✅ [STEP 4/6] Complete:', {
+  console.log('✅ [STEP 4/7] Complete:', {
     missingSkillsCount: missingSkills.missingSkills?.length || 0
   })
 
   // ============================================================================
   // STEP 5: Generate Recommendations
   // ============================================================================
-  console.log('🧠 [STEP 5/6] Generating recommendations...')
+  console.log('🧠 [STEP 5/7] Generating recommendations...')
 
   const step5Input = [{
     role: 'user',
@@ -582,7 +791,7 @@ Now, complete Step 5:
 ${PROMPTS.generateRecommendations.user(fitScore.score, missingSkills, blocks.blocks)}`
   }]
 
-  const step5 = await sendTurn(conversationId, step5Input, 5, 0.2)
+  const step5 = await sendTurn(conversationId, step5Input, 6, 0.2)
 
   let recommendations: RecommendationsAnalysis
   try {
@@ -592,22 +801,22 @@ ${PROMPTS.generateRecommendations.user(fitScore.score, missingSkills, blocks.blo
     throw new Error(`Failed to parse Step 5 recommendations: ${parseError.message}`)
   }
 
-  console.log('✅ [STEP 5/6] Complete:', {
+  console.log('✅ [STEP 5/7] Complete:', {
     recommendationCount: recommendations.recommendations?.length || 0
   })
 
   // ============================================================================
-  // STEP 6: Decide Layout (CRITICAL - MUST INCLUDE ALL BLOCKS FROM STEP 2)
+  // STEP 6: Decide Layout (CRITICAL - MUST INCLUDE ALL BLOCKS FROM STEP 2B)
   // ============================================================================
-  console.log('🧠 [STEP 6/6] Deciding layout for all extracted blocks...')
+  console.log('🧠 [STEP 6/7] Deciding layout for all tailored blocks...')
 
   const step6Input = [{
     role: 'user',
     content: `${PROMPTS.decideLayout.system}
 
-Now, complete Step 6 - CRITICAL: You MUST include ALL ${blocks.blocks?.length || 0} blocks you extracted in Step 2.
+Now, complete Step 6 - CRITICAL: You MUST include ALL ${blocks.blocks?.length || 0} blocks you tailored in Step 2B.
 
-🚨 REMINDER: In Step 2, you extracted these block IDs:
+🚨 REMINDER: In Step 2B, you tailored these block IDs:
 ${blocks.blocks?.map(b => `- ${b.id} (${b.category})`).join('\n')}
 
 Your layout output MUST reference ALL of these block IDs.
@@ -615,7 +824,7 @@ Your layout output MUST reference ALL of these block IDs.
 ${PROMPTS.decideLayout.user(blocks.blocks, params.templateName, params.templateConstraints)}`
   }]
 
-  const step6 = await sendTurn(conversationId, step6Input, 6, 0.1)
+  const step6 = await sendTurn(conversationId, step6Input, 7, 0.1)
 
   let layout: LayoutDecision
   try {
@@ -642,18 +851,20 @@ ${PROMPTS.decideLayout.user(blocks.blocks, params.templateName, params.templateC
     console.error(`❌ CRITICAL: Layout missing ${missingInLayout.length} blocks:`, missingInLayout)
   }
 
-  console.log('✅ [STEP 6/6] Complete:', {
+  console.log('✅ [STEP 6/7] Complete:', {
     sections: Object.keys(layout.layout),
     totalBlocksInLayout: layoutBlockIds.length,
     expectedBlocks: extractedBlockIds.length,
     allBlocksIncluded: missingInLayout.length === 0
   })
 
-  console.log('🎉 [CONVERSATIONAL TAILORING] All 6 steps complete!')
+  console.log('🎉 [CONVERSATIONAL TAILORING] All 7 steps complete!')
   console.log(`📊 [OpenAI Dashboard] View conversation: https://platform.openai.com/logs?api=responses&conversation=${conversationId}`)
+  console.log('📝 [ARCHITECTURE] New 2-step extraction flow: Step 2A (extract) → Step 2B (tailor)')
 
   return {
     compatibility,
+    rawBlocks,
     blocks,
     fitScore,
     missingSkills,

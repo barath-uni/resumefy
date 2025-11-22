@@ -18,16 +18,17 @@ const corsHeaders = {
  * This orchestrates the complete flow:
  * 1. Fetch job + resume data
  * 2. AI STEP 1: Analyze compatibility (overlaps, gaps, strategic focus)
- * 3. AI STEP 2: Extract + tailor blocks using compatibility insights
- * 4. AI STEP 3: Calculate fit score (0-100%)
- * 5. AI STEP 4: Detect missing skills with certification suggestions
- * 6. AI STEP 5: Generate actionable recommendations
- * 7. AI STEP 6: Decide layout for template
- * 8. Render PDF server-side (pdfmake)
- * 9. Upload to storage
- * 10. Update database with all AI insights
+ * 3. AI STEP 2A: Extract raw blocks (pure extraction, no tailoring)
+ * 4. AI STEP 2B: Tailor blocks (rewrite with JD keywords, assign priorities)
+ * 5. AI STEP 3: Calculate fit score (0-100%)
+ * 6. AI STEP 4: Detect missing skills with certification suggestions
+ * 7. AI STEP 5: Generate actionable recommendations
+ * 8. AI STEP 6: Decide layout for template
+ * 9. Render PDF server-side (pdfmake)
+ * 10. Upload to storage
+ * 11. Update database with all AI insights
  *
- * Cost: ~$0.04-0.06 per generation (6 AI calls)
+ * Cost: ~$0.05-0.07 per generation (7 AI calls - 2-step extraction flow)
  */
 
 Deno.serve(async (req) => {
@@ -240,7 +241,7 @@ Deno.serve(async (req) => {
       console.log('❌ [Cache Layer 1] MISS - Generating new tailored content with AI...')
 
       // ============================
-      // NEW CONVERSATIONAL AI FLOW (Single conversation, 6 steps)
+      // NEW CONVERSATIONAL AI FLOW (Single conversation, 7 steps)
       // ============================
 
       // Define template constraints for layout decision
@@ -271,7 +272,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Execute all 6 AI steps in a single conversation
+      // Execute all 7 AI steps in a single conversation (2-step extraction flow)
       const aiResults = await conversationalTailoring({
         resumeText: resume.raw_text,
         jobDescription: job.job_description,
@@ -281,13 +282,15 @@ Deno.serve(async (req) => {
       })
 
       // Extract results from conversation
+      // Note: aiResults.rawBlocks contains the unmodified extraction (Step 2A)
+      // We use aiResults.blocks (Step 2B) which has been tailored with JD keywords
       tailoredBlocks = aiResults.blocks
       fitScoreAnalysis = aiResults.fitScore
       missingSkillsAnalysis = aiResults.missingSkills
       recommendationsAnalysis = aiResults.recommendations
       layoutDecision = aiResults.layout
 
-      console.log('✅ [AI] All 6 steps complete via conversational flow:', {
+      console.log('✅ [AI] All 7 steps complete via conversational flow (2-step extraction):', {
         blocks: tailoredBlocks.blocks.length,
         fitScore: fitScoreAnalysis.score,
         missingSkills: missingSkillsAnalysis.missingSkills.length,
