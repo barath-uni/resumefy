@@ -50,6 +50,9 @@ Be specific and actionable. Reference actual content from the resume and JD.`
   },
 
   /**
+   * STEP 2: Extract and Tailor Resume Content Blocks
+   * Purpose: Extract ALL content from resume verbatim - no rewriting, no JD analysis
+   * This is a pure extraction step that preserves 100% of the original content
    * STEP 2A: Extract Raw Resume Content Blocks (NO TAILORING)
    * Purpose: Extract ALL content from resume verbatim - no rewriting, no JD analysis
    * This is a pure extraction step that preserves 100% of the original content
@@ -64,17 +67,25 @@ Be specific and actionable. Reference actual content from the resume and JD.`
 ║     • Copy text EXACTLY as written in the resume                         ║
 ║     • Extract EVERY section completely                                   ║
 ║     • Preserve original wording, dates, company names                    ║
+║     • Preserve ALL numbers, percentages, metrics EXACTLY as written      ║
 ║     • Do NOT analyze job descriptions                                    ║
 ║     • Do NOT rewrite bullets                                             ║
 ║     • Do NOT assign priorities                                           ║
 ║     • Do NOT skip any content                                            ║
+║     • Do NOT add metrics that don't exist in original                    ║
 ║                                                                           ║
 ║  ❌ WRONG (DO NOT DO THIS):                                              ║
 ║     • Rewriting bullets to match job keywords                            ║
 ║     • Filtering out "less relevant" content                              ║
 ║     • Analyzing which skills are important                               ║
 ║     • Merging or condensing bullets                                      ║
+║     • Adding metrics that aren't in the original resume                  ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
+
+🚨 METRICS PRESERVATION (ISSUE #2 FIX):
+If the original resume says "Built mobile app", extract EXACTLY that.
+DO NOT extract "Built mobile app with 10K+ downloads" unless those numbers exist in the original.
+All numbers, percentages, and metrics MUST be copied verbatim from the source.
 
 EXTRACTION RULES:
 1. Extract EVERY section: contact, summary, experience, education, skills, projects, certifications
@@ -82,9 +93,10 @@ EXTRACTION RULES:
 3. Extract ALL experience bullets (100% of them)
 4. Extract ALL skills (every single one)
 5. Extract ALL projects, ALL education entries, ALL certifications
-6. Do NOT assign priority scores (tailoring step will do this)
-7. Do NOT analyze job descriptions
-8. Do NOT rewrite content
+6. Preserve ALL metrics EXACTLY as written (no rounding, no adding, no changing)
+7. Do NOT assign priority scores (tailoring step will do this)
+8. Do NOT analyze job descriptions
+9. Do NOT rewrite content
 
 EXAMPLE - Original Resume Bullet:
 "Built web app using React"
@@ -238,9 +250,9 @@ Available categories: contact, summary, experience, education, skills, certifica
 ║  ✅ WHAT YOU SHOULD DO:                                                  ║
 ║     • REWRITE bullets using job description keywords                     ║
 ║     • ASSIGN priority scores (1-10) for ordering                         ║
-║     • QUANTIFY achievements with metrics where possible                  ║
-║     • EMPHASIZE relevant experience                                      ║
+║     • EMPHASIZE relevant experience and achievements                     ║
 ║     • PRESERVE exact same number of blocks as input                      ║
+║     • PRESERVE all existing metrics from raw extraction                  ║
 ║                                                                           ║
 ║  ❌ WHAT YOU MUST NOT DO:                                                ║
 ║     • Delete or merge blocks                                             ║
@@ -248,6 +260,24 @@ Available categories: contact, summary, experience, education, skills, certifica
 ║     • Filter out skills or projects                                      ║
 ║     • Change the structure of the resume                                 ║
 ║     • Drop education entries                                             ║
+║     • INVENT metrics, numbers, or percentages                            ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  🚨 CRITICAL ANTI-HALLUCINATION RULE (ISSUE #2 FIX) 🚨                   ║
+║                                                                           ║
+║  NEVER INVENT METRICS, NUMBERS, OR PERCENTAGES                           ║
+║                                                                           ║
+║  If raw extraction has: "Built mobile app"                               ║
+║  ✅ CORRECT: "Developed mobile application using modern frameworks"      ║
+║  ❌ WRONG: "Built mobile app serving 50K+ users" (INVENTED METRIC!)      ║
+║                                                                           ║
+║  If raw extraction has: "Reduced costs by 30%"                           ║
+║  ✅ CORRECT: "Achieved 30% cost reduction through optimization"          ║
+║  ✅ CORRECT: "Reduced operational costs by 30%"                          ║
+║  ❌ WRONG: "Reduced costs by 30-40%" (CHANGED METRIC!)                   ║
+║                                                                           ║
+║  RULE: You may REPHRASE existing metrics, but NEVER fabricate new ones   ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 TAILORING RULES:
@@ -257,8 +287,9 @@ TAILORING RULES:
 4. Projects has 3 entries → Output must have 3 entries (rewritten descriptions)
 5. Every block gets a priority score (1-10) based on relevance
 6. Rewrite bullets to match job description terminology
-7. Add metrics and quantification where possible
+7. PRESERVE existing metrics exactly - DO NOT add new metrics
 8. Never delete, merge, or filter content
+9. Never invent numbers, percentages, or KPIs
 
 EXAMPLE - Input Block (from Step 2A):
 {
@@ -277,7 +308,7 @@ EXAMPLE - Input Block (from Step 2A):
 
 Job Description: "Seeking Senior React Developer with experience in scalable web applications"
 
-✅ CORRECT TAILORING:
+✅ CORRECT TAILORING (if raw extraction had NO metrics):
 {
   "id": "experience-1",  // Same ID
   "category": "experience",
@@ -285,10 +316,27 @@ Job Description: "Seeking Senior React Developer with experience in scalable web
   "content": {
     "title": "Software Engineer",
     "company": "Tech Corp",
-    "bullets": [  // Same 3 bullets, but rewritten
-      "Developed scalable web application using React framework, serving 100K+ daily active users",
-      "Collaborated with cross-functional team of 5 engineers to deliver new features on 2-week sprints",
-      "Resolved 50+ production bugs, reducing customer-reported issues by 30%"
+    "bullets": [  // Same 3 bullets, rewritten WITHOUT inventing metrics
+      "Developed scalable web application using React framework and modern JavaScript",
+      "Collaborated with cross-functional engineering team to deliver features in agile sprints",
+      "Resolved production bugs and improved application stability"
+    ]
+  }
+}
+
+✅ CORRECT TAILORING (if raw extraction HAD metrics):
+Raw input: "Built web app", "Worked with team of 5", "Fixed 50+ bugs, reduced issues by 30%"
+{
+  "id": "experience-1",
+  "category": "experience",
+  "priority": 10,
+  "content": {
+    "title": "Software Engineer",
+    "company": "Tech Corp",
+    "bullets": [
+      "Developed scalable web application using React framework",
+      "Collaborated with cross-functional team of 5 engineers on feature delivery",
+      "Resolved 50+ production bugs, reducing customer-reported issues by 30%"  // Preserved metrics!
     ]
   }
 }
@@ -311,7 +359,7 @@ Priority scoring guide:
 - 4-5: Less relevant but valuable
 - 1-3: Least relevant but still included`,
 
-    user: (rawBlocks: any, jobDescription: string, jobTitle: string, compatibilityInsights: any) => `
+    user: (rawBlocks: any, jobDescription: string, jobTitle: string, compatibilityInsights: any, language?: string) => `
 JOB TITLE: ${jobTitle}
 
 JOB DESCRIPTION:
@@ -322,6 +370,8 @@ ${JSON.stringify(compatibilityInsights, null, 2)}
 
 RAW EXTRACTED BLOCKS (from Step 2A):
 ${JSON.stringify(rawBlocks, null, 2)}
+
+${language ? `🌍 CRITICAL: Output ALL rewritten content in ${language.toUpperCase()} language. Do not translate to English.` : ''}
 
 TASK: Tailor these blocks for this job by rewriting content and assigning priorities.
 

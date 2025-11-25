@@ -289,13 +289,15 @@ Deno.serve(async (req) => {
       missingSkillsAnalysis = aiResults.missingSkills
       recommendationsAnalysis = aiResults.recommendations
       layoutDecision = aiResults.layout
+      const detectedLanguage = aiResults.detectedLanguage
 
       console.log('✅ [AI] All 7 steps complete via conversational flow (2-step extraction):', {
         blocks: tailoredBlocks.blocks.length,
         fitScore: fitScoreAnalysis.score,
         missingSkills: missingSkillsAnalysis.missingSkills.length,
         recommendations: recommendationsAnalysis.recommendations.length,
-        layoutSections: Object.keys(layoutDecision.layout)
+        layoutSections: Object.keys(layoutDecision.layout),
+        language: `${detectedLanguage.languageName} (${detectedLanguage.language})`
       })
 
       // Convert new layout format to renderPDF expected format
@@ -335,7 +337,9 @@ Deno.serve(async (req) => {
           fit_score: fitScoreAnalysis.score,
           fit_score_breakdown: fitScoreAnalysis.breakdown,
           missing_skills: missingSkillsAnalysis.missingSkills,
-          recommendations: recommendationsAnalysis.recommendations
+          recommendations: recommendationsAnalysis.recommendations,
+          detected_language: detectedLanguage.language,
+          detected_language_name: detectedLanguage.languageName
         })
         .select()
         .single()

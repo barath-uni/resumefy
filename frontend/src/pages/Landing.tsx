@@ -197,20 +197,25 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3 pt-2">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                          <span className="text-sm text-gray-600">Free</span>
+                      <div className="flex flex-col items-center gap-2 pt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm text-gray-600">Free</span>
+                          </div>
+                          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm text-gray-600">Secure</span>
+                          </div>
+                          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm text-gray-600">2 min results</span>
+                          </div>
                         </div>
-                        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
                         <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                          <span className="text-sm text-gray-600">Secure</span>
-                        </div>
-                        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                          <span className="text-sm text-gray-600">2 min results</span>
+                          <span className="text-sm text-gray-500">🌍 Works in your language - Portuguese, Spanish, French, and 50+ more</span>
                         </div>
                       </div>
                     </div>
@@ -373,7 +378,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: "⏱️",
@@ -398,6 +403,14 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 desc: "Get readability scores and ATS optimization that actually gets past the bots and into human hands.",
                 delay: 0.4,
                 stats: "3x more interviews"
+              },
+              {
+                icon: "🌍",
+                iconBg: "from-orange-500 to-red-500",
+                title: "Apply in the language that gets you hired",
+                desc: "Tailored resumes in your language for local opportunities, or English for international roles. You control the language.",
+                delay: 0.6,
+                stats: "50+ languages"
               }
             ].map((feature, index) => (
               <motion.div
@@ -479,7 +492,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
               {
                 step: "01",
                 title: "Upload Resume",
-                desc: "Drop your PDF or DOCX file. Our AI securely parses and analyzes your content.",
+                desc: "Drop your PDF or DOCX in any language. We detect your language and keep everything consistent - no unwanted translations.",
                 icon: "📄",
                 color: "from-blue-500 to-blue-600"
               },

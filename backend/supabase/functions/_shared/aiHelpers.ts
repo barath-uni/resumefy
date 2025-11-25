@@ -23,6 +23,12 @@ interface OpenAIMessage {
   content: string
 }
 
+interface LanguageDetectionResult {
+  language: string // ISO 639-1 code (e.g., "en", "pt", "es", "fr")
+  languageName: string // Full name (e.g., "English", "Portuguese")
+  confidence: number // 0-100
+}
+
 interface OpenAIRequest {
   model: string
   messages: OpenAIMessage[]
@@ -125,6 +131,42 @@ async function callOpenAI(
 }
 
 /**
+ * DETECT LANGUAGE: Identify the primary language of the resume
+ * Purpose: Ensure all AI-generated content matches the resume's original language
+ */
+export async function detectLanguage(resumeText: string): Promise<LanguageDetectionResult> {
+  console.log('[AI] Detecting resume language...')
+
+  // Take first 1000 characters for language detection (enough to be accurate, saves tokens)
+  const sample = resumeText.substring(0, 1000)
+
+  const systemPrompt = `You are a language detection expert. Identify the primary language of text samples with high accuracy.
+
+Return JSON with:
+- language: ISO 639-1 code (e.g., "en", "pt", "es", "fr", "de", "it", "zh", "ja")
+- languageName: Full English name (e.g., "English", "Portuguese", "Spanish")
+- confidence: 0-100 scale
+
+Be accurate and conservative. If text is mixed-language, pick the dominant one.`
+
+  const userPrompt = `Detect the primary language of this resume text:
+
+${sample}
+
+Return JSON format as specified.`
+
+  const result = await callOpenAI(systemPrompt, userPrompt, 0.1, true)
+
+  console.log('[AI] Language detected:', {
+    language: result.language,
+    languageName: result.languageName,
+    confidence: result.confidence
+  })
+
+  return result as LanguageDetectionResult
+}
+
+/**
  * STEP 1: Analyze compatibility between resume and job description
  */
 export async function analyzeCompatibility(params: {
@@ -151,6 +193,7 @@ export async function analyzeCompatibility(params: {
 }
 
 /**
+ * STEP 2: Extract and tailor content blocks
  * STEP 2A: Extract raw content blocks (NO TAILORING)
  * Pure extraction - copies all content verbatim without rewriting or JD analysis
  */
@@ -294,6 +337,71 @@ export async function tailorExtractedBlocks(params: {
   })
 
   return result
+}
+
+/**
+<<<<<<< HEAD
+ * STEP 2 (LEGACY): Extract and tailor content blocks
+ * ⚠️ DEPRECATED: This function is being replaced by Step 2A + 2B
+=======
+ * VALIDATION: Detect fabricated metrics in tailored blocks (ISSUE #2 FIX)
+ * Compares raw extraction with tailored output to catch invented numbers/percentages
+ */
+export function validateNoFabricatedMetrics(rawBlocks: RawExtractedBlocks, tailoredBlocks: ExtractedBlocks): void {
+  console.log('🔍 [VALIDATION] Checking for fabricated metrics...')
+
+  // Extract all numbers/percentages from raw blocks
+  const rawMetrics = extractMetrics(rawBlocks.blocks)
+  const tailoredMetrics = extractMetrics(tailoredBlocks.blocks)
+
+  console.log(`📊 [VALIDATION] Raw blocks contain ${rawMetrics.length} metrics`)
+  console.log(`📊 [VALIDATION] Tailored blocks contain ${tailoredMetrics.length} metrics`)
+
+  // If tailored has significantly more metrics than raw, that's suspicious
+  const metricsAdded = tailoredMetrics.length - rawMetrics.length
+  if (metricsAdded > 0) {
+    console.warn(`⚠️ [VALIDATION WARNING] Detected ${metricsAdded} NEW metrics added during tailoring!`)
+    console.warn(`⚠️ Raw metrics: ${rawMetrics.join(', ')}`)
+    console.warn(`⚠️ Tailored metrics: ${tailoredMetrics.join(', ')}`)
+    console.warn(`⚠️ This may indicate fabricated metrics - review output carefully`)
+  } else {
+    console.log('✅ [VALIDATION] No new metrics added - good!')
+  }
+}
+
+/**
+ * Helper: Extract all numbers and percentages from content blocks
+ */
+function extractMetrics(blocks: any[]): string[] {
+  const metrics: string[] = []
+
+  // Regex to match numbers with optional commas, decimals, and percent signs
+  const metricPattern = /\b\d+([,\.]\d+)*%?\b/g
+
+  function extractFromString(str: string) {
+    const matches = str.match(metricPattern)
+    if (matches) {
+      metrics.push(...matches)
+    }
+  }
+
+  function extractFromObject(obj: any) {
+    if (typeof obj === 'string') {
+      extractFromString(obj)
+    } else if (Array.isArray(obj)) {
+      obj.forEach(extractFromObject)
+    } else if (obj && typeof obj === 'object') {
+      Object.values(obj).forEach(extractFromObject)
+    }
+  }
+
+  blocks.forEach(block => {
+    if (block.content) {
+      extractFromObject(block.content)
+    }
+  })
+
+  return metrics
 }
 
 /**
@@ -543,6 +651,7 @@ export async function conversationalTailoring(params: {
   missingSkills: MissingSkillsAnalysis
   recommendations: RecommendationsAnalysis
   layout: LayoutDecision
+  detectedLanguage: LanguageDetectionResult
 }> {
   console.log('🚀 [CONVERSATIONAL TAILORING] Starting with OpenAI Responses API (7 steps)...')
 
@@ -550,12 +659,20 @@ export async function conversationalTailoring(params: {
     throw new Error('OPENAI_API_KEY environment variable is not set')
   }
 
+  // ============================================================================
+  // STEP 0: Detect Resume Language (CRITICAL for Issue #1)
+  // ============================================================================
+  console.log('🌍 [STEP 0/7] Detecting resume language...')
+  const detectedLanguage = await detectLanguage(params.resumeText)
+  console.log(`✅ [STEP 0/7] Language detected: ${detectedLanguage.languageName} (${detectedLanguage.language}) - Confidence: ${detectedLanguage.confidence}%`)
+
   // Create conversation object on OpenAI (persists in Dashboard)
   const conversationId = await createConversation()
 
   // Master system prompt that stays consistent throughout conversation
   const masterSystemPrompt = `You are an expert resume tailoring AI assistant. You will help analyze a resume against a job description and tailor it through 7 sequential steps.
 
+<<<<<<< Updated upstream
 CRITICAL RULES THROUGHOUT ALL STEPS:
 1. PRESERVE 100% OF CONTENT - Do not remove sections, skills, projects, or education
 2. MAINTAIN CONTEXT - Remember what you extracted in previous steps
@@ -564,14 +681,45 @@ CRITICAL RULES THROUGHOUT ALL STEPS:
 
 You will be asked to complete these steps in order:
 - Step 1: Analyze compatibility between resume and job
+<<<<<<< HEAD
 - Step 2A: Extract ALL sections from resume VERBATIM (no rewriting, no JD analysis)
 - Step 2B: Tailor the extracted blocks using job description keywords (preserve all blocks)
+=======
+- Step 2: Extract ALL sections from resume (contact, experience, education, skills, projects, etc.)
+=======
+🌍 CRITICAL LANGUAGE RULE (ISSUE #1 FIX):
+ALL OUTPUT CONTENT MUST BE IN ${detectedLanguage.languageName.toUpperCase()} (${detectedLanguage.language})
+- The resume is written in ${detectedLanguage.languageName}
+- ALL rewritten bullets, summaries, and content MUST be in ${detectedLanguage.languageName}
+- Do NOT translate to English unless the resume is in English
+- Maintain the same language throughout ALL 7 steps
+
+🚨 CRITICAL ANTI-HALLUCINATION RULES (ISSUE #2 FIX):
+1. NEVER INVENT METRICS, NUMBERS, OR PERCENTAGES
+2. ONLY use metrics that appear in the original resume
+3. If a bullet has no metrics in the original → DO NOT add metrics in tailoring
+4. You may REPHRASE existing metrics, but NEVER fabricate new ones
+5. Examples:
+   ❌ WRONG: "Built app" → "Built app serving 100K users" (invented metric!)
+   ✅ CORRECT: "Built app" → "Developed scalable application using modern frameworks" (no metric added)
+   ✅ CORRECT: "Reduced costs by 30%" → "Achieved 30% cost reduction through optimization" (preserved existing metric)
+
+CRITICAL CONTENT PRESERVATION RULES:
+1. PRESERVE 100% OF CONTENT - Do not remove sections, skills, projects, or education
+2. MAINTAIN CONTEXT - Remember what you extracted in previous steps
+3. BE CONSISTENT - If you extract a block in Step 2A, it must appear in Step 2B and Step 6 layout
+4. SEPARATION OF CONCERNS - Step 2A extracts verbatim, Step 2B rewrites (but NEVER invents facts)
+
+You will be asked to complete these steps in order:
+- Step 1: Analyze compatibility between resume and job
+- Step 2A: Extract ALL sections from resume VERBATIM (no rewriting, no JD analysis, preserve all metrics exactly)
+- Step 2B: Tailor the extracted blocks using job description keywords (preserve all blocks, NEVER invent metrics)
 - Step 3: Calculate fit score based on tailored blocks
 - Step 4: Identify missing skills with learning suggestions
 - Step 5: Generate recommendations for improvement
 - Step 6: Create layout including ALL blocks from Step 2B
 
-Each step builds on the previous ones. Maintain consistency across all steps.`
+Each step builds on the previous ones. Maintain consistency and LANGUAGE across all steps.`
 
   // ============================================================================
   // STEP 1: Analyze Compatibility
@@ -679,7 +827,8 @@ ${PROMPTS.tailorExtractedBlocks.user(
       rawBlocks,
       params.jobDescription,
       params.jobTitle,
-      compatibility
+      compatibility,
+      detectedLanguage.languageName
     )}`
   }]
 
@@ -719,6 +868,11 @@ ${PROMPTS.tailorExtractedBlocks.user(
   if (rawBlocks.blocks?.length !== blocks.blocks?.length) {
     console.error(`❌ CRITICAL: Block count mismatch! Raw: ${rawBlocks.blocks?.length}, Tailored: ${blocks.blocks?.length}`)
   }
+
+  // ============================================================================
+  // VALIDATION: Check for fabricated metrics (ISSUE #2 FIX)
+  // ============================================================================
+  validateNoFabricatedMetrics(rawBlocks, blocks)
 
   // ============================================================================
   // STEP 3: Calculate Fit Score
@@ -861,6 +1015,7 @@ ${PROMPTS.decideLayout.user(blocks.blocks, params.templateName, params.templateC
   console.log('🎉 [CONVERSATIONAL TAILORING] All 7 steps complete!')
   console.log(`📊 [OpenAI Dashboard] View conversation: https://platform.openai.com/logs?api=responses&conversation=${conversationId}`)
   console.log('📝 [ARCHITECTURE] New 2-step extraction flow: Step 2A (extract) → Step 2B (tailor)')
+  console.log(`🌍 [LANGUAGE] All content generated in: ${detectedLanguage.languageName} (${detectedLanguage.language})`)
 
   return {
     compatibility,
@@ -869,7 +1024,8 @@ ${PROMPTS.decideLayout.user(blocks.blocks, params.templateName, params.templateC
     fitScore,
     missingSkills,
     recommendations,
-    layout
+    layout,
+    detectedLanguage
   }
 }
 
