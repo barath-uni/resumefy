@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/button'
-import { Briefcase, Plus, Loader2, Download, Eye, AlertCircle } from 'lucide-react'
+import { Briefcase, Plus, Loader2, Download, Eye, AlertCircle, RefreshCw } from 'lucide-react'
 import TemplatePicker from './TemplatePicker'
+import ResumePreview from './ResumePreview'
+import { usePDFExport } from '../hooks/usePDFExport'
+import { completePDFGeneration } from '../lib/pdfUploadService'
 
 interface Job {
   id: string
@@ -13,6 +16,10 @@ interface Job {
   template_used?: string
   generation_status: 'pending' | 'generating' | 'completed' | 'failed'
   pdf_url?: string
+  tailored_json?: {
+    blocks: any[]
+    layout: any
+  }
   fit_score?: number
   fit_score_breakdown?: {
     keywords: number
@@ -98,6 +105,8 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
   }
 
   const handleGeneratePDF = async (jobId: string, templateName: string) => {
+    console.log('[JobDescriptionSection] Starting PDF generation:', { jobId, templateName })
+
     // Update local state to show generating
     setJobs(jobs.map(j =>
       j.id === jobId
@@ -105,20 +114,88 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
         : j
     ))
 
-    // Call backend Edge Function
+    try {
+      // Check if we have tailored_json already (from AI processing)
+      const { data: jobData, error: fetchError } = await supabase
+        .from('jobs')
+        .select('tailored_json, user_id')
+        .eq('id', jobId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // If tailored_json exists, use frontend PDF generation
+      if (jobData?.tailored_json?.blocks && jobData?.tailored_json?.layout) {
+        console.log('[JobDescriptionSection] Using frontend PDF generation')
+        await handleFrontendGeneration(jobId, templateName, jobData.tailored_json, jobData.user_id)
+      } else {
+        // Fallback to backend generation (for backwards compatibility)
+        console.log('[JobDescriptionSection] Falling back to backend generation')
+        await handleBackendGeneration(jobId, templateName)
+      }
+    } catch (error) {
+      console.error('[JobDescriptionSection] Error:', error)
+      alert('Failed to generate PDF: ' + (error as Error).message)
+      setJobs(jobs.map(j =>
+        j.id === jobId ? { ...j, generation_status: 'failed' as const } : j
+      ))
+    }
+  }
+
+  // Frontend PDF generation (NEW!)
+  const handleFrontendGeneration = async (
+    jobId: string,
+    templateName: string,
+    tailoredJson: any,
+    jobUserId: string
+  ) => {
+    console.log('[JobDescriptionSection] Frontend generation started')
+
+    // Use the hook inline
+    const { generatePDF } = usePDFExport()
+
+    const blob = await generatePDF({
+      templateId: templateName as 'A' | 'B' | 'C',
+      blocks: tailoredJson.blocks,
+      layout: tailoredJson.layout
+    })
+
+    if (!blob) {
+      throw new Error('Failed to generate PDF blob')
+    }
+
+    console.log('[JobDescriptionSection] PDF blob generated:', blob.size, 'bytes')
+
+    // Upload to Supabase
+    const result = await completePDFGeneration({
+      blob,
+      jobId,
+      userId: jobUserId,
+      templateId: templateName as 'A' | 'B' | 'C'
+    })
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to upload PDF')
+    }
+
+    console.log('[JobDescriptionSection] PDF uploaded successfully:', result.pdfUrl)
+
+    // Reload jobs to get updated data
+    await loadJobs()
+  }
+
+  // Backend PDF generation (FALLBACK)
+  const handleBackendGeneration = async (jobId: string, templateName: string) => {
     const { data, error } = await supabase.functions.invoke('generate-tailored-resume', {
       body: { jobId, templateName }
     })
 
     if (error || !data.success) {
-      alert('Failed to generate PDF: ' + (data?.error || error?.message))
-      setJobs(jobs.map(j =>
-        j.id === jobId ? { ...j, generation_status: 'failed' as const } : j
-      ))
-    } else {
-      // Reload jobs to get updated status
-      loadJobs()
+      throw new Error(data?.error || error?.message || 'Backend generation failed')
     }
+
+    // Reload jobs
+    await loadJobs()
   }
 
   if (loading) {
@@ -260,7 +337,20 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
 
 // Job Card Component
 function JobCard({ job, onGeneratePDF }: { job: Job; onGeneratePDF: (jobId: string, template: string) => void }) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('A')
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(job.template_used || 'A')
+  const [showPreview, setShowPreview] = useState(false)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
+  // Handle template switch for completed jobs
+  const handleTemplateSwitch = async (newTemplate: string) => {
+    setSelectedTemplate(newTemplate)
+    setIsRegenerating(true)
+    try {
+      await onGeneratePDF(job.id, newTemplate)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
 
   return (
     <motion.div
@@ -349,6 +439,66 @@ function JobCard({ job, onGeneratePDF }: { job: Job; onGeneratePDF: (jobId: stri
             </div>
           )}
 
+          {/* Template Switcher (NEW!) */}
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">Template Style</h4>
+              <span className="text-xs text-gray-500">Switch to try different layouts</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {['A', 'B', 'C'].map((template) => (
+                <Button
+                  key={template}
+                  onClick={() => handleTemplateSwitch(template)}
+                  disabled={isRegenerating}
+                  variant={selectedTemplate === template ? 'default' : 'outline'}
+                  className={`text-sm ${
+                    selectedTemplate === template
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-0'
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {isRegenerating && selectedTemplate === template ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    `Template ${template}`
+                  )}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {selectedTemplate === 'A' && '📄 Classic Professional - Clean single-column layout (95% ATS)'}
+              {selectedTemplate === 'B' && '📊 Modern Two-Column - Space-efficient with sidebar (88% ATS)'}
+              {selectedTemplate === 'C' && '🎨 Creative Bold - Eye-catching design with colors (75% ATS)'}
+            </p>
+          </div>
+
+          {/* Preview Toggle (NEW!) */}
+          {job.tailored_json && (
+            <div className="mb-4">
+              <Button
+                onClick={() => setShowPreview(!showPreview)}
+                variant="outline"
+                className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 rounded-lg font-medium flex items-center justify-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                {showPreview ? 'Hide Preview' : 'Show Live Preview'}
+              </Button>
+            </div>
+          )}
+
+          {/* Live Preview (NEW!) */}
+          {showPreview && job.tailored_json && (
+            <div className="mb-4">
+              <ResumePreview
+                templateId={selectedTemplate as 'A' | 'B' | 'C'}
+                blocks={job.tailored_json.blocks}
+                layout={job.tailored_json.layout}
+                showControls={false}
+              />
+            </div>
+          )}
+
           {/* PDF Download Section */}
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
             <p className="text-sm font-medium text-emerald-900 mb-3">
@@ -370,12 +520,12 @@ function JobCard({ job, onGeneratePDF }: { job: Job; onGeneratePDF: (jobId: stri
                   link.click()
                 }}
                 variant="outline"
-              className="flex-1 border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Download
-            </Button>
-          </div>
+                className="flex-1 border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </Button>
+            </div>
           </div>
         </>
       )}
