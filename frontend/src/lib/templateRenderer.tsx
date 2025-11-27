@@ -1,4 +1,3 @@
-import React from 'react'
 import TemplateA from '../components/templates/TemplateA'
 import TemplateB from '../components/templates/TemplateB'
 import TemplateC from '../components/templates/TemplateC'

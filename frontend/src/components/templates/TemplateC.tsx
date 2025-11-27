@@ -4,7 +4,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 interface ContentBlock {
   id: string
   type: 'header' | 'section' | 'list' | 'text'
-  category: 'contact' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'custom'
+  category: 'contact' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'custom' | 'summary'
   priority: number
   content: any
   metadata: {

@@ -2,7 +2,7 @@ import { PDFViewer } from '@react-pdf/renderer'
 import { TemplateRenderer, validateTemplateData } from '../lib/templateRenderer'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { AlertCircle, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
+import { AlertCircle, ZoomIn, Maximize2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { useState } from 'react'
 

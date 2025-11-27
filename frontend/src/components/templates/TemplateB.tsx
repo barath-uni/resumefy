@@ -4,7 +4,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 interface ContentBlock {
   id: string
   type: 'header' | 'section' | 'list' | 'text'
-  category: 'contact' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'custom'
+  category: 'contact' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'custom' | 'summary'
   priority: number
   content: any
   metadata: {
@@ -197,7 +197,6 @@ const TemplateB: React.FC<TemplateBProps> = ({ blocks, layout }) => {
   })
 
   // Separate blocks by section
-  const headerBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'header')
   const sidebarBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'sidebar')
   const mainBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'main')
 
