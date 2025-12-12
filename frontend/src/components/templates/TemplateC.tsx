@@ -38,71 +38,103 @@ interface TemplateCProps {
   layout: LayoutDecision
 }
 
-// Template C: Creative Bold Layout
+// Template C: Creative Bold Layout with Timeline & Color Zones
 // Color palette from CLAUDE.md:
-// - buff (#d4a373ff) for primary accents
-// - tea-green (#ccd5aeff) for section backgrounds
-// - beige (#e9edc9ff) for skill tags
+// - buff (#d4a373) for primary accents & timeline markers
+// - tea-green (#ccd5ae) for section backgrounds
+// - beige (#e9edc9) for skill tags
+// - cornsilk (#fefae0) for page background
 
 const createStyles = (_layout: LayoutDecision) => {
   return StyleSheet.create({
     page: {
       padding: 0,
       fontFamily: 'Helvetica',
-      fontSize: 11,
+      fontSize: 10.5,
       lineHeight: 1.5,
-      color: '#2D3748',
-      backgroundColor: '#FFFFFF',
+      color: '#2d3748',
+      backgroundColor: '#fefae0', // cornsilk background
     },
-    // Bold header with color bar
+    // Bold header with color bar and geometric elements
     header: {
       backgroundColor: '#d4a373', // buff color
-      padding: 30,
+      padding: 32,
       marginBottom: 0,
+      position: 'relative',
+    },
+    headerAccent: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: 120,
+      height: '100%',
+      backgroundColor: 'rgba(0,0,0,0.1)',
     },
     name: {
-      fontSize: 32,
+      fontSize: 34,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 6,
-      color: '#FFFFFF',
-      letterSpacing: 1,
+      marginBottom: 5,
+      color: '#ffffff',
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
     },
     jobTitle: {
-      fontSize: 14,
-      color: '#FFFFFF',
-      marginBottom: 10,
+      fontSize: 15,
+      color: '#ffffff',
+      marginBottom: 12,
       opacity: 0.95,
+      fontFamily: 'Helvetica-Oblique',
     },
     contactInfo: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 12,
+      gap: 14,
     },
     contactItem: {
-      fontSize: 10,
-      color: '#FFFFFF',
-      marginRight: 16,
-      opacity: 0.9,
+      fontSize: 9.5,
+      color: '#ffffff',
+      marginRight: 18,
+      opacity: 0.92,
     },
     // Main content area
     main: {
-      padding: 30,
+      padding: 32,
     },
     sectionContainer: {
-      marginBottom: 20,
+      marginBottom: 22,
     },
     sectionHeader: {
       backgroundColor: '#ccd5ae', // tea-green
-      padding: 8,
-      marginBottom: 12,
-      borderRadius: 4,
+      padding: 10,
+      marginBottom: 14,
+      borderRadius: 0,
+      borderLeft: '6px solid #d4a373',
+      position: 'relative',
     },
     sectionTitle: {
-      fontSize: 15,
+      fontSize: 14,
       fontFamily: 'Helvetica-Bold',
-      color: '#2D3748',
+      color: '#1a202c',
       textTransform: 'uppercase',
-      letterSpacing: 1.2,
+      letterSpacing: 1.5,
+      paddingLeft: 8,
+    },
+    // Timeline elements for experience
+    timelineContainer: {
+      position: 'relative',
+      paddingLeft: 28,
+      borderLeft: '3px solid #d4a373',
+      marginLeft: 8,
+    },
+    timelineMarker: {
+      position: 'absolute',
+      left: -8,
+      top: 5,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: '#d4a373',
+      border: '3px solid #fefae0',
     },
     // Summary section
     summary: {
@@ -112,62 +144,70 @@ const createStyles = (_layout: LayoutDecision) => {
       color: '#4A5568',
       paddingHorizontal: 4,
     },
-    // Experience entries
+    // Experience entries with timeline styling
     experienceEntry: {
-      marginBottom: 14,
-      paddingLeft: 4,
+      marginBottom: 16,
+      paddingLeft: 8,
+      position: 'relative',
     },
     position: {
       fontSize: 12,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 3,
-      color: '#1A202C',
+      color: '#1a202c',
     },
     companyLine: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 3,
+      marginBottom: 4,
+      backgroundColor: '#e9edc9',
+      padding: 4,
+      borderRadius: 3,
     },
     company: {
-      fontSize: 11,
-      fontFamily: 'Helvetica-Oblique',
+      fontSize: 10.5,
+      fontFamily: 'Helvetica-Bold',
       color: '#d4a373', // buff accent
-      marginRight: 8,
+      marginRight: 10,
     },
     dates: {
       fontSize: 9,
-      color: '#718096',
+      color: '#4a5568',
+      fontFamily: 'Helvetica-Oblique',
     },
     bulletList: {
       paddingLeft: 16,
-      marginTop: 5,
+      marginTop: 6,
     },
     bullet: {
-      fontSize: 10,
-      marginBottom: 4,
+      fontSize: 9.5,
+      marginBottom: 3.5,
       flexDirection: 'row',
-      color: '#4A5568',
+      color: '#4a5568',
     },
     bulletSymbol: {
       marginRight: 8,
       color: '#d4a373', // buff accent
       fontFamily: 'Helvetica-Bold',
+      fontSize: 11,
     },
-    // Skills section
+    // Skills section with visual badges
     skillsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
-      paddingHorizontal: 4,
+      gap: 10,
+      paddingHorizontal: 6,
+      paddingVertical: 6,
     },
     skillTag: {
       backgroundColor: '#e9edc9', // beige
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-      fontSize: 9,
-      color: '#2D3748',
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 16,
+      fontSize: 9.5,
+      color: '#2d3748',
       fontFamily: 'Helvetica-Bold',
+      border: '2px solid #d4a373',
     },
     // Education entries
     educationEntry: {
@@ -264,15 +304,16 @@ const TemplateC: React.FC<TemplateCProps> = ({ blocks, layout }) => {
     </View>
   )
 
-  // Render experience
+  // Render experience with timeline markers
   const renderExperience = (block: ContentBlock) => (
     <View key={block.id} style={styles.experienceEntry}>
+      <View style={styles.timelineMarker} />
       <Text style={styles.position}>{block.content.title || block.content.position}</Text>
       <View style={styles.companyLine}>
         <Text style={styles.company}>{block.content.company}</Text>
         {(block.content.startDate || block.content.endDate) && (
           <Text style={styles.dates}>
-            {block.content.startDate || ''} {block.content.startDate && block.content.endDate && '- '}{block.content.endDate || ''}
+            {block.content.startDate || ''} {block.content.startDate && block.content.endDate && '→ '}{block.content.endDate || ''}
           </Text>
         )}
       </View>
@@ -280,7 +321,7 @@ const TemplateC: React.FC<TemplateCProps> = ({ blocks, layout }) => {
         <View style={styles.bulletList}>
           {block.content.bullets.map((bullet: string, idx: number) => (
             <View key={idx} style={styles.bullet}>
-              <Text style={styles.bulletSymbol}>●</Text>
+              <Text style={styles.bulletSymbol}>▸</Text>
               <Text>{bullet}</Text>
             </View>
           ))}
@@ -395,13 +436,15 @@ const TemplateC: React.FC<TemplateCProps> = ({ blocks, layout }) => {
             </View>
           )}
 
-          {/* Experience */}
+          {/* Experience with Timeline */}
           {experienceBlocks.length > 0 && (
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Experience</Text>
               </View>
-              {experienceBlocks.map(block => renderExperience(block))}
+              <View style={styles.timelineContainer}>
+                {experienceBlocks.map(block => renderExperience(block))}
+              </View>
             </View>
           )}
 

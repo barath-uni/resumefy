@@ -1,6 +1,7 @@
 import TemplateA from '../components/templates/TemplateA'
 import TemplateB from '../components/templates/TemplateB'
 import TemplateC from '../components/templates/TemplateC'
+import TemplateD from '../components/templates/TemplateD'
 
 interface ContentBlock {
   id: string
@@ -35,7 +36,7 @@ interface LayoutDecision {
 }
 
 interface TemplateRendererProps {
-  templateId: 'A' | 'B' | 'C'
+  templateId: 'A' | 'B' | 'C' | 'D'
   blocks: ContentBlock[]
   layout: LayoutDecision
 }
@@ -61,6 +62,8 @@ export function TemplateRenderer({ templateId, blocks, layout }: TemplateRendere
       return <TemplateB blocks={blocks} layout={layout} />
     case 'C':
       return <TemplateC blocks={blocks} layout={layout} />
+    case 'D':
+      return <TemplateD blocks={blocks} layout={layout} />
     default:
       // Fallback to Template A
       console.warn(`Unknown template ID: ${templateId}, falling back to Template A`)
@@ -77,7 +80,7 @@ export function TemplateRenderer({ templateId, blocks, layout }: TemplateRendere
  * const pdf = <TemplateComponent blocks={blocks} layout={layout} />
  * ```
  */
-export function getTemplateComponent(templateId: 'A' | 'B' | 'C') {
+export function getTemplateComponent(templateId: 'A' | 'B' | 'C' | 'D') {
   switch (templateId) {
     case 'A':
       return TemplateA
@@ -85,6 +88,8 @@ export function getTemplateComponent(templateId: 'A' | 'B' | 'C') {
       return TemplateB
     case 'C':
       return TemplateC
+    case 'D':
+      return TemplateD
     default:
       console.warn(`Unknown template ID: ${templateId}, falling back to Template A`)
       return TemplateA
@@ -128,30 +133,38 @@ export function validateTemplateData(blocks: ContentBlock[], layout: LayoutDecis
 /**
  * Get template metadata
  */
-export function getTemplateMetadata(templateId: 'A' | 'B' | 'C') {
+export function getTemplateMetadata(templateId: 'A' | 'B' | 'C' | 'D') {
   const metadata = {
     A: {
       name: 'Classic Professional',
-      description: 'Clean single-column layout with clear hierarchy',
+      description: 'Clean single-column layout with clear hierarchy and refined spacing',
       layout: 'single-column',
       atsScore: 95,
-      features: ['ATS-Optimized', 'Single Column', 'Clean Layout'],
+      features: ['ATS-Optimized', 'Single Column', 'Grid Skills', 'Clean Layout'],
       supportsInlineEdit: true,
     },
     B: {
       name: 'Modern Two-Column',
-      description: 'Space-efficient design with sidebar for skills and education',
+      description: 'Dark sidebar with skill bars and visual hierarchy',
       layout: 'two-column',
       atsScore: 88,
-      features: ['Two Column', 'Compact', 'Modern'],
+      features: ['Two Column', 'Skill Bars', 'Dark Sidebar', 'Modern'],
       supportsInlineEdit: true,
     },
     C: {
       name: 'Creative Bold',
-      description: 'Eye-catching design with color accents and modern typography',
+      description: 'Timeline-based experience layout with color zones and geometric elements',
       layout: 'modern',
       atsScore: 75,
-      features: ['Color Accents', 'Bold Typography', 'Creative'],
+      features: ['Color Accents', 'Timeline', 'Bold Typography', 'Creative'],
+      supportsInlineEdit: true,
+    },
+    D: {
+      name: 'Compact Dense',
+      description: 'Ultra-efficient space utilization with multi-column layouts',
+      layout: 'compact-dense',
+      atsScore: 92,
+      features: ['Space-Efficient', 'Multi-Column', 'Dense Layout', 'Senior Level'],
       supportsInlineEdit: true,
     },
   }
