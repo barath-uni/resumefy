@@ -7,6 +7,7 @@ import TemplatePicker from './TemplatePicker'
 import ResumePreview from './ResumePreview'
 import { usePDFExport } from '../hooks/usePDFExport'
 import { completePDFGeneration } from '../lib/pdfUploadService'
+import { templates } from '../lib/templateData'
 
 interface Job {
   id: string
@@ -445,31 +446,32 @@ function JobCard({ job, onGeneratePDF }: { job: Job; onGeneratePDF: (jobId: stri
               <h4 className="text-sm font-semibold text-gray-900">Template Style</h4>
               <span className="text-xs text-gray-500">Switch to try different layouts</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {['A', 'B', 'C'].map((template) => (
+            <div className="grid grid-cols-2 gap-2">
+              {templates.map((template) => (
                 <Button
-                  key={template}
-                  onClick={() => handleTemplateSwitch(template)}
+                  key={template.id}
+                  onClick={() => handleTemplateSwitch(template.id)}
                   disabled={isRegenerating}
-                  variant={selectedTemplate === template ? 'default' : 'outline'}
+                  variant={selectedTemplate === template.id ? 'default' : 'outline'}
                   className={`text-sm ${
-                    selectedTemplate === template
+                    selectedTemplate === template.id
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-0'
                       : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  {isRegenerating && selectedTemplate === template ? (
+                  {isRegenerating && selectedTemplate === template.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    `Template ${template}`
+                    template.name
                   )}
                 </Button>
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {selectedTemplate === 'A' && '📄 Classic Professional - Clean single-column layout (95% ATS)'}
-              {selectedTemplate === 'B' && '📊 Modern Two-Column - Space-efficient with sidebar (88% ATS)'}
-              {selectedTemplate === 'C' && '🎨 Creative Bold - Eye-catching design with colors (75% ATS)'}
+              {selectedTemplate === 'B' && '📊 Modern Two-Column - Dark sidebar with skill bars (88% ATS)'}
+              {selectedTemplate === 'C' && '🎨 Creative Bold - Timeline layout with color zones (75% ATS)'}
+              {selectedTemplate === 'D' && '📋 Compact Dense - Ultra-efficient multi-column layout (92% ATS)'}
             </p>
           </div>
 

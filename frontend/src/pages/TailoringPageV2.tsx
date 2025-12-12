@@ -11,6 +11,7 @@ import { PaywallModal } from '../components/PaywallModal'
 import { checkCanGeneratePDF } from '../lib/paywall'
 import { Progress } from '../components/ui/progress'
 import { Dialog, DialogContent } from '../components/ui/dialog'
+import { templates } from '../lib/templateData'
 
 interface JobInput {
   id: string
@@ -498,30 +499,30 @@ export default function TailoringPageV2() {
             {/* Template Selector */}
             <Card className="p-6">
               <h3 className="text-sm font-semibold mb-4">Choose Template</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {['A', 'B', 'C'].map((template) => (
+              <div className="grid grid-cols-2 gap-3">
+                {templates.map((template) => (
                   <button
-                    key={template}
-                    onClick={() => setSelectedTemplate(template)}
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template.id)}
                     className={`relative group cursor-pointer rounded-lg border-2 transition-all ${
-                      selectedTemplate === template
+                      selectedTemplate === template.id
                         ? 'border-primary shadow-sm'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
                     <div className="aspect-[3/4] bg-muted rounded-md overflow-hidden">
                       <img
-                        src={`/templates/template-${template.toLowerCase()}-thumb.svg`}
-                        alt={`Template ${template}`}
+                        src={template.previewThumb}
+                        alt={template.name}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className={`mt-2 text-center pb-2 ${
-                      selectedTemplate === template ? 'text-primary font-semibold' : 'text-muted-foreground'
+                      selectedTemplate === template.id ? 'text-primary font-semibold' : 'text-muted-foreground'
                     }`}>
-                      <p className="text-xs">Template {template}</p>
+                      <p className="text-xs">{template.name}</p>
                     </div>
-                    {selectedTemplate === template && (
+                    {selectedTemplate === template.id && (
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
