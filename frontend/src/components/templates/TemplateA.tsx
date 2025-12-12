@@ -41,115 +41,130 @@ interface TemplateAProps {
 // Register fonts (optional - React-PDF comes with Helvetica by default)
 // For production, you might want to register custom fonts here
 
-// Define styles based on Template A constraints
+// Define styles based on Template A constraints - Classic Professional
 const createStyles = (_layout: LayoutDecision) => {
   return StyleSheet.create({
     page: {
       padding: 40,
       fontFamily: 'Helvetica',
-      fontSize: 11,
-      lineHeight: 1.5,
-      color: '#333333',
+      fontSize: 10.5,
+      lineHeight: 1.4,
+      color: '#1a1a1a',
     },
     header: {
-      marginBottom: 16,
-      borderBottom: '2px solid #333333',
-      paddingBottom: 8,
+      marginBottom: 20,
+      borderBottom: '3px solid #000000',
+      paddingBottom: 10,
     },
     name: {
-      fontSize: 24,
+      fontSize: 26,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 4,
+      marginBottom: 3,
       color: '#000000',
+      letterSpacing: 0.5,
     },
     contactInfo: {
-      fontSize: 10,
-      color: '#555555',
+      fontSize: 9,
+      color: '#4a4a4a',
       display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
+      gap: 6,
     },
     contactItem: {
-      marginRight: 12,
+      marginRight: 15,
     },
     main: {
       flex: 1,
     },
+    sectionDivider: {
+      borderTop: '1px solid #d0d0d0',
+      marginTop: 14,
+      marginBottom: 14,
+    },
     sectionTitle: {
-      fontSize: 14,
+      fontSize: 13,
       fontFamily: 'Helvetica-Bold',
-      marginTop: 12,
-      marginBottom: 6,
+      marginBottom: 8,
       color: '#000000',
       textTransform: 'uppercase',
-      borderBottom: '1px solid #CCCCCC',
-      paddingBottom: 2,
+      letterSpacing: 1,
     },
     experienceEntry: {
-      marginBottom: 8,
+      marginBottom: 10,
     },
     jobTitle: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
+      color: '#000000',
     },
     company: {
       fontSize: 10,
       fontFamily: 'Helvetica-Oblique',
       marginBottom: 2,
-      color: '#555555',
+      color: '#4a4a4a',
     },
     dates: {
       fontSize: 9,
-      color: '#777777',
+      color: '#666666',
       marginBottom: 4,
     },
     bulletList: {
-      paddingLeft: 16,
+      paddingLeft: 14,
     },
     bullet: {
-      fontSize: 10,
-      marginBottom: 3,
+      fontSize: 9.5,
+      marginBottom: 2.5,
       display: 'flex',
       flexDirection: 'row',
+      color: '#2a2a2a',
     },
     bulletSymbol: {
       marginRight: 6,
+      color: '#000000',
     },
-    skillsList: {
+    skillsGrid: {
       display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 6,
-      marginTop: 4,
+      gap: 5,
+      marginTop: 6,
     },
     skillItem: {
-      fontSize: 10,
-      backgroundColor: '#F5F5F5',
-      padding: '3px 8px',
-      borderRadius: 3,
+      fontSize: 9,
+      backgroundColor: '#f8f8f8',
+      padding: '4px 10px',
+      borderRadius: 2,
+      border: '1px solid #e0e0e0',
+      color: '#2a2a2a',
+      width: '30%',
+      textAlign: 'center',
     },
     educationEntry: {
-      marginBottom: 6,
+      marginBottom: 8,
     },
     degree: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
+      color: '#000000',
     },
     school: {
       fontSize: 10,
       marginBottom: 1,
+      color: '#4a4a4a',
     },
     year: {
       fontSize: 9,
-      color: '#777777',
+      color: '#666666',
     },
     textBlock: {
       fontSize: 10,
-      lineHeight: 1.4,
+      lineHeight: 1.5,
       marginBottom: 6,
+      color: '#2a2a2a',
+      textAlign: 'justify',
     },
   })
 }
@@ -242,13 +257,13 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
     return null
   }
 
-  // Render skills block
+  // Render skills block with grid layout
   const renderSkillsBlock = (block: ContentBlock) => {
     if (block.category === 'skills' && block.type === 'list') {
       return (
         <View key={block.id}>
-          <Text style={styles.sectionTitle}>Skills</Text>
-          <View style={styles.skillsList}>
+          <Text style={styles.sectionTitle}>Core Competencies</Text>
+          <View style={styles.skillsGrid}>
             {Array.isArray(block.content) && block.content.map((skill: string, idx: number) => (
               <Text key={idx} style={styles.skillItem}>{skill}</Text>
             ))}
@@ -342,9 +357,14 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
         {/* Header Section */}
         {headerBlocks.map(block => renderHeaderBlock(block))}
 
-        {/* Main Section */}
+        {/* Main Section with dividers between major sections */}
         <View style={styles.main}>
-          {mainBlocks.map(block => renderBlock(block))}
+          {mainBlocks.map((block, idx) => (
+            <React.Fragment key={block.id}>
+              {idx > 0 && <View style={styles.sectionDivider} />}
+              {renderBlock(block)}
+            </React.Fragment>
+          ))}
         </View>
 
         {/* Footer - Add warnings if any */}
