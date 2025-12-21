@@ -17,6 +17,8 @@ import {
 } from '../components/ui/alert-dialog'
 import { useToast } from '../hooks/use-toast'
 import { templates } from '../lib/templateData'
+import { usePDFExport } from '../hooks/usePDFExport'
+import { completePDFGeneration } from '../lib/pdfUploadService'
 
 interface BulkJob {
   id: string
@@ -26,14 +28,45 @@ interface BulkJob {
   generation_status: 'pending' | 'generating' | 'completed' | 'failed'
   pdf_url?: string
   fit_score?: number
+  fit_score_breakdown?: {
+    keywords: number
+    experience: number
+    qualifications: number
+  }
+  missing_skills?: Array<{
+    skill: string
+    importance: 'high' | 'medium' | 'low'
+    reason: string
+    suggestions: Array<{
+      type: 'certification' | 'course' | 'bootcamp' | 'book' | 'practice'
+      name: string
+      provider: string
+      estimatedTime: string
+      cost: string
+      link: string
+    }>
+  }>
+  recommendations?: Array<{
+    priority: 'high' | 'medium' | 'low'
+    category: 'skill_gap' | 'content' | 'strategy' | 'network' | 'preparation'
+    title: string
+    description: string
+    impact: string
+    timeframe: string
+  }>
   created_at: string
   template_used?: string
+  tailored_json?: {
+    blocks: any[]
+    layout: any
+  }
 }
 
 export default function GeneratedResumesPage() {
   const { resumeId } = useParams<{ resumeId: string }>()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { generatePDF } = usePDFExport()
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [userTier, setUserTier] = useState<'free' | 'pro' | 'max'>('free')
@@ -238,49 +271,75 @@ export default function GeneratedResumesPage() {
     setIsSwitchingTemplate(true)
 
     try {
-      console.log('🔄 Switching template from', previewJob.template_used, 'to', newTemplate)
+      console.log('🔄 [Frontend PDF] Switching template from', previewJob.template_used, 'to', newTemplate)
 
-      // Call generate-tailored-resume with new template
+      // ALWAYS fetch fresh content from backend (don't trust database tailored_json - it might be in pdfmake format)
+      console.log('📥 [Frontend PDF] Fetching fresh content from backend...')
+
       const { data, error } = await supabase.functions.invoke('generate-tailored-resume', {
         body: {
           jobId: previewJob.id,
-          templateName: newTemplate
+          templateName: newTemplate,
+          returnContentOnly: true // Signal we only want the content, not PDF rendering
         }
       })
 
+      console.log("SWITCHING, JOB CONTENT", data)
       if (error || !data?.success) {
-        console.error('❌ Template switch error:', error || data?.error)
-        toast({
-          title: "Failed to switch template",
-          description: error?.message || data?.error || 'Unknown error',
-          variant: "destructive"
-        })
-        return
+        console.error('❌ [Frontend PDF] Backend error:', error, data)
+        throw new Error(error?.message || data?.error || 'Failed to fetch resume content')
       }
 
-      console.log('✅ Template switched successfully')
+      // Extract blocks and layout from backend response
+      const blocks = data.tailoredContent?.blocks
+      const layout = data.tailoredContent?.layout
+
+      if (!blocks || !layout) {
+        console.error('❌ [Frontend PDF] Invalid response:', data)
+        throw new Error('Backend did not return tailored content')
+      }
+
+      console.log('✅ [Frontend PDF] Received content from backend:', blocks.length, 'blocks')
+      console.log('📦 [Frontend PDF] Sample block:', blocks[0])
+
+      // ALWAYS use Frontend PDF Generation
+      console.log('📄 [Frontend PDF] Generating PDF with template', newTemplate)
+      console.log('📄 [Frontend PDF] Blocks:', blocks.length)
+
+      const pdfBlob = await generatePDF({
+        templateId: newTemplate as 'A' | 'B' | 'C' | 'D',
+        blocks: blocks,
+        layout: layout
+      })
+
+      if (!pdfBlob) {
+        throw new Error('Failed to generate PDF')
+      }
+
+      console.log('✅ [Frontend PDF] PDF generated, size:', pdfBlob.size)
+
+      // Convert blob to object URL for preview (NO UPLOAD - just in-memory preview)
+      const pdfObjectUrl = URL.createObjectURL(pdfBlob)
+      console.log('📄 [Frontend PDF] Created object URL for preview:', pdfObjectUrl)
+
+      // Update preview state with new template and in-memory PDF URL
+      setPreviewTemplate(newTemplate)
+      setPreviewJob({
+        ...previewJob,
+        template_used: newTemplate,
+        pdf_url: pdfObjectUrl // Use object URL instead of uploaded URL
+      })
+      console.log('✅ [Frontend PDF] Preview updated with new template (in-memory, not uploaded)')
 
       toast({
         title: "Template switched",
         description: `Resume regenerated with Template ${newTemplate}`,
       })
 
-      // Reload jobs to get updated PDF URL
-      await loadExistingJobs()
-
-      // Update preview with new template
-      setPreviewTemplate(newTemplate)
-
-      // Find and update the preview job
-      const updatedJob = allJobs.find(j => j.id === previewJob.id)
-      if (updatedJob) {
-        setPreviewJob(updatedJob)
-      }
-
     } catch (err) {
-      console.error('❌ Unexpected error:', err)
+      console.error('❌ [Frontend PDF] Error:', err)
       toast({
-        title: "Unexpected error",
+        title: "Failed to switch template",
         description: (err as Error).message,
         variant: "destructive"
       })
@@ -608,6 +667,7 @@ export default function GeneratedResumesPage() {
                   </div>
                 ) : (
                   <iframe
+                    key={`${previewJob.id}-${previewJob.template_used}`}
                     src={`${previewJob.pdf_url}#toolbar=0&navpanes=0&scrollbar=1`}
                     className="w-full h-full rounded-lg shadow-lg bg-white"
                     title={`Resume - ${previewJob.job_title}`}
@@ -686,21 +746,180 @@ export default function GeneratedResumesPage() {
                 </div>
 
                 {previewJob.fit_score && (
-                  <div className="pt-6 border-t">
-                    <h3 className="text-sm font-semibold mb-3">Fit Score</h3>
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl font-bold text-primary">{previewJob.fit_score}%</div>
-                      <div className="flex-1">
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${previewJob.fit_score}%` }}
-                          />
+                  <div className="pt-6 border-t space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3">Fit Score</h3>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="text-3xl font-bold text-primary">{previewJob.fit_score}%</div>
+                        <div className="flex-1">
+                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${previewJob.fit_score}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {previewJob.fit_score >= 80 ? 'Excellent match' : previewJob.fit_score >= 60 ? 'Good match' : 'Fair match'}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {previewJob.fit_score >= 80 ? 'Excellent match' : previewJob.fit_score >= 60 ? 'Good match' : 'Fair match'}
-                        </p>
                       </div>
+
+                      {/* Fit Score Breakdown */}
+                      {previewJob.fit_score_breakdown && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Score Breakdown</p>
+                          <div className="space-y-2">
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Keywords Match</span>
+                                <span className="font-medium">{previewJob.fit_score_breakdown.keywords}%</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-blue-500"
+                                  style={{ width: `${previewJob.fit_score_breakdown.keywords}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Experience Match</span>
+                                <span className="font-medium">{previewJob.fit_score_breakdown.experience}%</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-green-500"
+                                  style={{ width: `${previewJob.fit_score_breakdown.experience}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Qualifications Match</span>
+                                <span className="font-medium">{previewJob.fit_score_breakdown.qualifications}%</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-purple-500"
+                                  style={{ width: `${previewJob.fit_score_breakdown.qualifications}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Missing Skills Section */}
+                {previewJob.missing_skills && previewJob.missing_skills.length > 0 && (
+                  <div className="pt-6 border-t">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        Skills to Develop
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {previewJob.missing_skills.length}
+                      </Badge>
+                    </h3>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {previewJob.missing_skills.map((skill, idx) => (
+                        <div key={idx} className="rounded-lg border p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{skill.skill}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{skill.reason}</p>
+                            </div>
+                            <Badge
+                              variant={skill.importance === 'high' ? 'destructive' : skill.importance === 'medium' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {skill.importance}
+                            </Badge>
+                          </div>
+
+                          {skill.suggestions && skill.suggestions.length > 0 && (
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-primary hover:underline">
+                                View learning resources ({skill.suggestions.length})
+                              </summary>
+                              <div className="mt-2 space-y-2 pl-2">
+                                {skill.suggestions.slice(0, 2).map((suggestion, sIdx) => (
+                                  <div key={sIdx} className="border-l-2 border-primary/20 pl-2">
+                                    <p className="font-medium">{suggestion.name}</p>
+                                    <p className="text-muted-foreground">{suggestion.provider}</p>
+                                    <div className="flex gap-2 mt-1">
+                                      <span className="text-muted-foreground">⏱️ {suggestion.estimatedTime}</span>
+                                      <span className="text-muted-foreground">💰 {suggestion.cost}</span>
+                                    </div>
+                                    {suggestion.link && (
+                                      <a
+                                        href={suggestion.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                                      >
+                                        Learn more
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations Section */}
+                {previewJob.recommendations && previewJob.recommendations.length > 0 && (
+                  <div className="pt-6 border-t">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-500" />
+                        Recommendations
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {previewJob.recommendations.length}
+                      </Badge>
+                    </h3>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {previewJob.recommendations
+                        .sort((a, b) => {
+                          const priorityOrder = { high: 0, medium: 1, low: 2 }
+                          return priorityOrder[a.priority] - priorityOrder[b.priority]
+                        })
+                        .map((rec, idx) => (
+                        <div key={idx} className="rounded-lg border p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{rec.title}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
+                            </div>
+                            <Badge
+                              variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {rec.priority}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                              Impact: {rec.impact}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                              {rec.timeframe}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

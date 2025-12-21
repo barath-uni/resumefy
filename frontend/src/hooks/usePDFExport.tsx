@@ -68,7 +68,7 @@ export function usePDFExport(options?: UsePDFExportOptions) {
    * Generate PDF blob from template
    */
   const generatePDF = async (params: {
-    templateId: 'A' | 'B' | 'C'
+    templateId: 'A' | 'B' | 'C' | 'D'
     blocks: ContentBlock[]
     layout: LayoutDecision
   }): Promise<Blob | null> => {
@@ -131,7 +131,7 @@ export function usePDFExport(options?: UsePDFExportOptions) {
    * Download PDF directly (blob → download)
    */
   const downloadPDF = async (params: {
-    templateId: 'A' | 'B' | 'C'
+    templateId: 'A' | 'B' | 'C' | 'D'
     blocks: ContentBlock[]
     layout: LayoutDecision
     filename?: string
@@ -175,7 +175,7 @@ export function usePDFExport(options?: UsePDFExportOptions) {
    * Get PDF as data URL (useful for previews)
    */
   const getPDFDataURL = async (params: {
-    templateId: 'A' | 'B' | 'C'
+    templateId: 'A' | 'B' | 'C' | 'D'
     blocks: ContentBlock[]
     layout: LayoutDecision
   }): Promise<string | null> => {

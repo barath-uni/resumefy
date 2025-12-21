@@ -36,109 +36,175 @@ interface LayoutDecision {
   warnings: string[]
 }
 
-interface TemplateAProps {
+interface TemplateDProps {
   blocks: ContentBlock[]
   layout: LayoutDecision
 }
 
-// Define styles for Template A - Classic Professional
+// Template D: Compact Dense - Ultra-efficient space utilization
 const createStyles = (_layout: LayoutDecision) => {
   return StyleSheet.create({
     page: {
-      padding: 40,
+      padding: 28,
       fontFamily: 'Helvetica',
-      fontSize: 11,
-      lineHeight: 1.5,
-      color: '#333333',
+      fontSize: 9,
+      lineHeight: 1.3,
+      color: '#1a1a1a',
+      backgroundColor: '#ffffff',
     },
     header: {
-      marginBottom: 16,
-      borderBottom: '2px solid #333333',
-      paddingBottom: 8,
+      marginBottom: 10,
+      borderBottom: '1.5px solid #2a2a2a',
+      paddingBottom: 6,
     },
     name: {
-      fontSize: 24,
+      fontSize: 20,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 4,
+      marginBottom: 3,
       color: '#000000',
+      letterSpacing: 0.5,
     },
     contactInfo: {
-      fontSize: 10,
-      color: '#555555',
+      fontSize: 8,
+      color: '#444444',
       display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
+      gap: 4,
     },
     contactItem: {
-      marginRight: 12,
+      marginRight: 8,
+      fontSize: 8,
     },
     main: {
       flex: 1,
     },
     sectionTitle: {
-      fontSize: 14,
-      fontFamily: 'Helvetica-Bold',
-      marginTop: 12,
-      marginBottom: 6,
-      color: '#000000',
-      textTransform: 'uppercase',
-      borderBottom: '1px solid #CCCCCC',
-      paddingBottom: 2,
-    },
-    entryContainer: {
-      marginBottom: 8,
-    },
-    entryTitle: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 2,
-    },
-    entrySubtitle: {
-      fontSize: 10,
-      fontFamily: 'Helvetica-Oblique',
-      marginBottom: 2,
-      color: '#555555',
-    },
-    entryDetails: {
-      fontSize: 9,
-      color: '#777777',
+      marginTop: 8,
       marginBottom: 4,
+      color: '#000000',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      borderBottom: '1px solid #cccccc',
+      paddingBottom: 2,
     },
-    bulletList: {
-      paddingLeft: 16,
+    experienceEntry: {
+      marginBottom: 5,
     },
-    bullet: {
-      fontSize: 10,
-      marginBottom: 3,
+    jobTitleRow: {
       display: 'flex',
       flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 1,
+    },
+    jobTitle: {
+      fontSize: 10,
+      fontFamily: 'Helvetica-Bold',
+      color: '#1a1a1a',
+    },
+    dates: {
+      fontSize: 8,
+      color: '#666666',
+      textAlign: 'right',
+    },
+    company: {
+      fontSize: 9,
+      fontFamily: 'Helvetica-Oblique',
+      marginBottom: 2,
+      color: '#444444',
+    },
+    bulletList: {
+      paddingLeft: 12,
+    },
+    bullet: {
+      fontSize: 9,
+      marginBottom: 2,
+      display: 'flex',
+      flexDirection: 'row',
+      lineHeight: 1.3,
     },
     bulletSymbol: {
-      marginRight: 6,
+      marginRight: 4,
+      fontSize: 8,
     },
-    skillsList: {
+    skillsGrid: {
       display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 6,
-      marginTop: 4,
+      gap: 3,
+      marginTop: 3,
     },
     skillItem: {
+      fontSize: 8,
+      backgroundColor: '#f5f5f5',
+      padding: '2px 6px',
+      borderRadius: 2,
+      border: '0.5px solid #d0d0d0',
+      color: '#2a2a2a',
+      width: '23%',
+      textAlign: 'center',
+    },
+    educationEntry: {
+      marginBottom: 4,
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    educationLeft: {
+      flex: 1,
+    },
+    degree: {
       fontSize: 10,
-      backgroundColor: '#F5F5F5',
-      padding: '3px 8px',
-      borderRadius: 3,
+      fontFamily: 'Helvetica-Bold',
+      marginBottom: 1,
+    },
+    school: {
+      fontSize: 9,
+      color: '#444444',
+    },
+    year: {
+      fontSize: 8,
+      color: '#666666',
+      textAlign: 'right',
     },
     textBlock: {
-      fontSize: 10,
-      lineHeight: 1.4,
-      marginBottom: 6,
+      fontSize: 9,
+      lineHeight: 1.3,
+      marginBottom: 4,
+      textAlign: 'justify',
+    },
+    twoColumnContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 12,
+    },
+    column: {
+      flex: 1,
+    },
+    projectEntry: {
+      marginBottom: 4,
+    },
+    projectTitle: {
+      fontSize: 9,
+      fontFamily: 'Helvetica-Bold',
+      marginBottom: 1,
+    },
+    projectDescription: {
+      fontSize: 8,
+      lineHeight: 1.3,
+      marginBottom: 1,
+    },
+    projectTech: {
+      fontSize: 7,
+      color: '#666666',
+      fontFamily: 'Helvetica-Oblique',
     },
   })
 }
 
-const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
+const TemplateD: React.FC<TemplateDProps> = ({ blocks, layout }) => {
   const styles = createStyles(layout)
 
   // Sort blocks by placement order
@@ -170,6 +236,7 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
           {content.location && <Text style={styles.contactItem}>{content.location}</Text>}
           {content.linkedin && <Text style={styles.contactItem}>{content.linkedin}</Text>}
           {content.github && <Text style={styles.contactItem}>{content.github}</Text>}
+          {content.website && <Text style={styles.contactItem}>{content.website}</Text>}
         </View>
       </View>
     )
@@ -182,7 +249,7 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
     // CASE 1: Array of skills (simple string array)
     if (isArrayContent(content) && content.every((item: any) => typeof item === 'string')) {
       return (
-        <View style={styles.skillsList}>
+        <View style={styles.skillsGrid}>
           {content.map((skill: string, idx: number) => (
             <Text key={idx} style={styles.skillItem}>{skill}</Text>
           ))}
@@ -215,19 +282,21 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
     return null
   }
 
-  // Render individual entry (experience, education, project, certification, etc.)
+  // Render individual entry (compact format for Template D)
   const renderEntry = (entry: any, idx: number) => {
-    // Experience entry
+    // Experience entry (compact format with dates on right)
     if (isExperienceEntry(entry)) {
       return (
-        <View key={idx} style={styles.entryContainer}>
-          <Text style={styles.entryTitle}>{entry.title || entry.position}</Text>
-          <Text style={styles.entrySubtitle}>{entry.company}</Text>
-          {(entry.startDate || entry.endDate) && (
-            <Text style={styles.entryDetails}>
-              {entry.startDate || ''} {entry.startDate && entry.endDate && '- '}{entry.endDate || ''}
-            </Text>
-          )}
+        <View key={idx} style={styles.experienceEntry}>
+          <View style={styles.jobTitleRow}>
+            <Text style={styles.jobTitle}>{entry.title || entry.position}</Text>
+            {(entry.startDate || entry.endDate || entry.dates) && (
+              <Text style={styles.dates}>
+                {entry.dates || `${entry.startDate || ''} ${entry.startDate && entry.endDate ? '- ' : ''}${entry.endDate || ''}`}
+              </Text>
+            )}
+          </View>
+          <Text style={styles.company}>{entry.company}</Text>
           {entry.bullets && Array.isArray(entry.bullets) && (
             <View style={styles.bulletList}>
               {entry.bullets.map((bullet: string, bIdx: number) => (
@@ -242,26 +311,32 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
       )
     }
 
-    // Education entry
+    // Education entry (inline format with year on right)
     if (isEducationEntry(entry)) {
       return (
-        <View key={idx} style={styles.entryContainer}>
-          <Text style={styles.entryTitle}>{entry.degree}</Text>
-          <Text style={styles.entrySubtitle}>{entry.school || entry.institution}</Text>
-          {entry.graduationDate && <Text style={styles.entryDetails}>{entry.graduationDate}</Text>}
-          {entry.gpa && <Text style={styles.entryDetails}>GPA: {entry.gpa}</Text>}
+        <View key={idx} style={styles.educationEntry}>
+          <View style={styles.educationLeft}>
+            <Text style={styles.degree}>{entry.degree}</Text>
+            <Text style={styles.school}>{entry.school || entry.institution}</Text>
+            {entry.gpa && <Text style={styles.school}>GPA: {entry.gpa}</Text>}
+          </View>
+          {(entry.graduationDate || entry.year) && (
+            <Text style={styles.year}>{entry.graduationDate || entry.year}</Text>
+          )}
         </View>
       )
     }
 
-    // Project entry
+    // Project entry (compact)
     if (isProjectEntry(entry)) {
       return (
-        <View key={idx} style={styles.entryContainer}>
-          <Text style={styles.entryTitle}>{entry.title || entry.name}</Text>
-          {entry.description && <Text style={styles.textBlock}>{entry.description}</Text>}
+        <View key={idx} style={styles.projectEntry}>
+          <Text style={styles.projectTitle}>{entry.title || entry.name}</Text>
+          {entry.description && (
+            <Text style={styles.projectDescription}>{entry.description}</Text>
+          )}
           {entry.technologies && (
-            <Text style={styles.entryDetails}>
+            <Text style={styles.projectTech}>
               Technologies: {Array.isArray(entry.technologies) ? entry.technologies.join(', ') : entry.technologies}
             </Text>
           )}
@@ -269,13 +344,15 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
       )
     }
 
-    // Certification entry
+    // Certification entry (inline format like education)
     if (isCertificationEntry(entry)) {
       return (
-        <View key={idx} style={styles.entryContainer}>
-          <Text style={styles.entryTitle}>{entry.name || entry.title}</Text>
-          <Text style={styles.entrySubtitle}>{entry.issuer}</Text>
-          {entry.date && <Text style={styles.entryDetails}>{entry.date}</Text>}
+        <View key={idx} style={styles.educationEntry}>
+          <View style={styles.educationLeft}>
+            <Text style={styles.degree}>{entry.name || entry.title}</Text>
+            {entry.issuer && <Text style={styles.school}>{entry.issuer}</Text>}
+          </View>
+          {entry.date && <Text style={styles.year}>{entry.date}</Text>}
         </View>
       )
     }
@@ -326,8 +403,8 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
 
         {/* Footer - Add warnings if any */}
         {layout.warnings.length > 0 && (
-          <View style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #EEEEEE' }}>
-            <Text style={{ fontSize: 8, color: '#999999' }}>
+          <View style={{ marginTop: 'auto', paddingTop: 6, borderTop: '0.5px solid #eeeeee' }}>
+            <Text style={{ fontSize: 7, color: '#999999' }}>
               Note: {layout.warnings.join(', ')}
             </Text>
           </View>
@@ -337,4 +414,4 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
   )
 }
 
-export default TemplateA
+export default TemplateD

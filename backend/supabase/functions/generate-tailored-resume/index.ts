@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { jobId, templateName } = await req.json()
+    const { jobId, templateName, returnContentOnly } = await req.json()
 
     if (!jobId || !templateName) {
       return new Response(
@@ -50,31 +50,33 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (!['A', 'B', 'C'].includes(templateName)) {
+    if (!['A', 'B', 'C', 'D'].includes(templateName)) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'templateName must be A, B, or C'
+          error: 'templateName must be A, B, C, or D'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('🎨 [generate-tailored-resume] Starting for jobId:', jobId, 'template:', templateName)
+    console.log('🎨 [generate-tailored-resume] Starting for jobId:', jobId, 'template:', templateName, 'returnContentOnly:', returnContentOnly)
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Update status to 'generating'
-    await supabase
-      .from('jobs')
-      .update({
-        generation_status: 'generating',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', jobId)
+    // ONLY update status to 'generating' if we're actually generating PDF (not just fetching content)
+    if (!returnContentOnly) {
+      await supabase
+        .from('jobs')
+        .update({
+          generation_status: 'generating',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', jobId)
+    }
 
     // STEP 1: Fetch job data (includes resume_id, job_description)
     console.log('📋 [generate-tailored-resume] Step 1: Fetching job data...')
@@ -198,6 +200,10 @@ Deno.serve(async (req) => {
       console.log('✅ [Cache Layer 1] HIT - Using cached tailored content (resume+job)')
       console.log('💰 [Cost Saved] Skipped 5 expensive AI calls!')
 
+      console.log('🔍 [DEBUG CACHE] cachedContent.tailored_blocks type:', Array.isArray(cachedContent.tailored_blocks) ? 'ARRAY' : typeof cachedContent.tailored_blocks)
+      console.log('🔍 [DEBUG CACHE] cachedContent.tailored_blocks length:', cachedContent.tailored_blocks?.length)
+      console.log('🔍 [DEBUG CACHE] First cached block:', JSON.stringify(cachedContent.tailored_blocks?.[0], null, 2))
+
       tailoredBlocks = { blocks: cachedContent.tailored_blocks }
       fitScoreAnalysis = {
         score: cachedContent.fit_score,
@@ -269,6 +275,14 @@ Deno.serve(async (req) => {
           sections: { header: { maxLines: 5 }, main: { maxLines: 45 } },
           fontSizes: { name: 24, heading: 14, body: 11, minBody: 9 },
           spacing: { betweenSections: 1, betweenEntries: 0.5 }
+        },
+        D: {
+          name: 'Template D - Compact Dense',
+          type: 'compact-dense',
+          maxLines: 60,
+          sections: { header: { maxLines: 4 }, main: { maxLines: 56 } },
+          fontSizes: { name: 20, heading: 11, body: 9, minBody: 8 },
+          spacing: { betweenSections: 0.7, betweenEntries: 0.3 }
         }
       }
 
@@ -278,7 +292,7 @@ Deno.serve(async (req) => {
         jobDescription: job.job_description,
         jobTitle: job.job_title,
         templateName: `Template ${templateName}`,
-        templateConstraints: templateConstraints[templateName as 'A' | 'B' | 'C']
+        templateConstraints: templateConstraints[templateName as 'A' | 'B' | 'C' | 'D']
       })
 
       // Extract results from conversation
@@ -350,6 +364,28 @@ Deno.serve(async (req) => {
         console.log('✅ [Cache Layer 1] Content cached successfully')
         cachedContentId = savedContent.id
       }
+    }
+
+    // ============================
+    // EARLY RETURN: If returnContentOnly=true, skip PDF generation
+    // ============================
+    if (returnContentOnly) {
+      console.log('📥 [Content-Only Mode] Returning tailored content without PDF generation')
+      console.log('🔍 [DEBUG] tailoredBlocks structure:', Object.keys(tailoredBlocks))
+      console.log('🔍 [DEBUG] tailoredBlocks.blocks type:', Array.isArray(tailoredBlocks.blocks) ? 'ARRAY' : typeof tailoredBlocks.blocks)
+      console.log('🔍 [DEBUG] tailoredBlocks.blocks length:', tailoredBlocks.blocks?.length)
+      console.log('🔍 [DEBUG] First block:', JSON.stringify(tailoredBlocks.blocks?.[0], null, 2))
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          tailoredContent: {
+            blocks: tailoredBlocks.blocks,
+            layout: convertedLayout
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // ============================
