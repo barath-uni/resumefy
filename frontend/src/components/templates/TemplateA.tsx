@@ -1,17 +1,20 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import {
+  extractTextContent,
+  getCategoryTitle,
+  isArrayContent,
+  isExperienceEntry,
+  isEducationEntry,
+  isProjectEntry,
+  isCertificationEntry
+} from './templateHelpers'
 
 interface ContentBlock {
   id: string
-  type: 'header' | 'section' | 'list' | 'text'
-  category: 'contact' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'custom'
+  category: string  // Generic - any string allowed
   priority: number
   content: any
-  metadata: {
-    estimatedLines: number
-    isOptional: boolean
-    keywords: string[]
-  }
 }
 
 interface LayoutDecision {
@@ -38,10 +41,7 @@ interface TemplateAProps {
   layout: LayoutDecision
 }
 
-// Register fonts (optional - React-PDF comes with Helvetica by default)
-// For production, you might want to register custom fonts here
-
-// Define styles based on Template A constraints - Classic Professional
+// Define styles for Template A - Classic Professional
 const createStyles = (_layout: LayoutDecision) => {
   return StyleSheet.create({
     page: {
@@ -90,22 +90,22 @@ const createStyles = (_layout: LayoutDecision) => {
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
-    experienceEntry: {
-      marginBottom: 10,
+    entryContainer: {
+      marginBottom: 8,
     },
-    jobTitle: {
+    entryTitle: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
       color: '#000000',
     },
-    company: {
+    entrySubtitle: {
       fontSize: 10,
       fontFamily: 'Helvetica-Oblique',
       marginBottom: 2,
       color: '#4a4a4a',
     },
-    dates: {
+    entryDetails: {
       fontSize: 9,
       color: '#666666',
       marginBottom: 4,
@@ -141,24 +141,6 @@ const createStyles = (_layout: LayoutDecision) => {
       width: '30%',
       textAlign: 'center',
     },
-    educationEntry: {
-      marginBottom: 8,
-    },
-    degree: {
-      fontSize: 11,
-      fontFamily: 'Helvetica-Bold',
-      marginBottom: 2,
-      color: '#000000',
-    },
-    school: {
-      fontSize: 10,
-      marginBottom: 1,
-      color: '#4a4a4a',
-    },
-    year: {
-      fontSize: 9,
-      color: '#666666',
-    },
     textBlock: {
       fontSize: 10,
       lineHeight: 1.5,
@@ -183,188 +165,176 @@ const TemplateA: React.FC<TemplateAProps> = ({ blocks, layout }) => {
   const headerBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'header')
   const mainBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'main')
 
-  // Render header block (name + contact)
-  const renderHeaderBlock = (block: ContentBlock) => {
-    if (block.category === 'contact' && block.type === 'header') {
+  // Find contact block for header
+  const contactBlock = blocks.find(b => b.category === 'contact')
+
+  // Render header (name + contact info)
+  const renderHeader = () => {
+    if (!contactBlock) return null
+
+    const { content } = contactBlock
+
+    return (
+      <View style={styles.header}>
+        <Text style={styles.name}>{content.name || 'Your Name'}</Text>
+        <View style={styles.contactInfo}>
+          {content.email && <Text style={styles.contactItem}>{content.email}</Text>}
+          {content.phone && <Text style={styles.contactItem}>{content.phone}</Text>}
+          {content.location && <Text style={styles.contactItem}>{content.location}</Text>}
+          {content.linkedin && <Text style={styles.contactItem}>{content.linkedin}</Text>}
+          {content.github && <Text style={styles.contactItem}>{content.github}</Text>}
+        </View>
+      </View>
+    )
+  }
+
+  // Render single block content (NO section title - that's handled in grouping)
+  const renderBlockContent = (block: ContentBlock) => {
+    const { content } = block
+
+    // CASE 1: Array of skills (simple string array)
+    if (isArrayContent(content) && content.every((item: any) => typeof item === 'string')) {
       return (
-        <View key={block.id} style={styles.header}>
-          <Text style={styles.name}>{block.content.name || 'Your Name'}</Text>
-          <View style={styles.contactInfo}>
-            {block.content.email && (
-              <Text style={styles.contactItem}>{block.content.email}</Text>
-            )}
-            {block.content.phone && (
-              <Text style={styles.contactItem}>{block.content.phone}</Text>
-            )}
-            {block.content.location && (
-              <Text style={styles.contactItem}>{block.content.location}</Text>
-            )}
-            {block.content.linkedin && (
-              <Text style={styles.contactItem}>{block.content.linkedin}</Text>
-            )}
-          </View>
+        <View style={styles.skillsList}>
+          {content.map((skill: string, idx: number) => (
+            <Text key={idx} style={styles.skillItem}>{skill}</Text>
+          ))}
         </View>
       )
     }
+
+    // CASE 2: Array of entries
+    if (isArrayContent(content)) {
+      return (
+        <>
+          {content.map((entry: any, idx: number) => renderEntry(entry, idx))}
+        </>
+      )
+    }
+
+    // CASE 3: Single object entry (experience, education, project, certification)
+    if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+      if (isExperienceEntry(content) || isEducationEntry(content) || isProjectEntry(content) || isCertificationEntry(content)) {
+        return renderEntry(content, 0)
+      }
+    }
+
+    // CASE 4: Single text content
+    const textContent = extractTextContent(content)
+    if (textContent) {
+      return <Text style={styles.textBlock}>{textContent}</Text>
+    }
+
     return null
   }
 
-  // Render experience block
-  const renderExperienceBlock = (block: ContentBlock) => {
-    if (block.category === 'experience' && block.type === 'section') {
+  // Render individual entry (experience, education, project, certification, etc.)
+  const renderEntry = (entry: any, idx: number) => {
+    // Experience entry
+    if (isExperienceEntry(entry)) {
       return (
-        <View key={block.id}>
-          <Text style={styles.sectionTitle}>Experience</Text>
-          {Array.isArray(block.content) && block.content.map((entry: any, idx: number) => (
-            <View key={idx} style={styles.experienceEntry}>
-              <Text style={styles.jobTitle}>{entry.title || entry.position}</Text>
-              <Text style={styles.company}>{entry.company}</Text>
-              {entry.dates && <Text style={styles.dates}>{entry.dates}</Text>}
-              {entry.bullets && Array.isArray(entry.bullets) && (
-                <View style={styles.bulletList}>
-                  {entry.bullets.map((bullet: string, bIdx: number) => (
-                    <View key={bIdx} style={styles.bullet}>
-                      <Text style={styles.bulletSymbol}>•</Text>
-                      <Text>{bullet}</Text>
-                    </View>
-                  ))}
+        <View key={idx} style={styles.entryContainer}>
+          <Text style={styles.entryTitle}>{entry.title || entry.position}</Text>
+          <Text style={styles.entrySubtitle}>{entry.company}</Text>
+          {(entry.startDate || entry.endDate) && (
+            <Text style={styles.entryDetails}>
+              {entry.startDate || ''} {entry.startDate && entry.endDate && '- '}{entry.endDate || ''}
+            </Text>
+          )}
+          {entry.bullets && Array.isArray(entry.bullets) && (
+            <View style={styles.bulletList}>
+              {entry.bullets.map((bullet: string, bIdx: number) => (
+                <View key={bIdx} style={styles.bullet}>
+                  <Text style={styles.bulletSymbol}>•</Text>
+                  <Text>{bullet}</Text>
                 </View>
-              )}
+              ))}
             </View>
-          ))}
+          )}
         </View>
       )
     }
-    return null
-  }
 
-  // Render education block
-  const renderEducationBlock = (block: ContentBlock) => {
-    if (block.category === 'education' && block.type === 'section') {
+    // Education entry
+    if (isEducationEntry(entry)) {
       return (
-        <View key={block.id}>
-          <Text style={styles.sectionTitle}>Education</Text>
-          {Array.isArray(block.content) && block.content.map((entry: any, idx: number) => (
-            <View key={idx} style={styles.educationEntry}>
-              <Text style={styles.degree}>{entry.degree}</Text>
-              <Text style={styles.school}>{entry.school || entry.institution}</Text>
-              {entry.year && <Text style={styles.year}>{entry.year}</Text>}
-            </View>
-          ))}
+        <View key={idx} style={styles.entryContainer}>
+          <Text style={styles.entryTitle}>{entry.degree}</Text>
+          <Text style={styles.entrySubtitle}>{entry.school || entry.institution}</Text>
+          {entry.graduationDate && <Text style={styles.entryDetails}>{entry.graduationDate}</Text>}
+          {entry.gpa && <Text style={styles.entryDetails}>GPA: {entry.gpa}</Text>}
         </View>
       )
     }
-    return null
-  }
 
-  // Render skills block with grid layout
-  const renderSkillsBlock = (block: ContentBlock) => {
-    if (block.category === 'skills' && block.type === 'list') {
+    // Project entry
+    if (isProjectEntry(entry)) {
       return (
-        <View key={block.id}>
-          <Text style={styles.sectionTitle}>Core Competencies</Text>
-          <View style={styles.skillsGrid}>
-            {Array.isArray(block.content) && block.content.map((skill: string, idx: number) => (
-              <Text key={idx} style={styles.skillItem}>{skill}</Text>
-            ))}
-          </View>
+        <View key={idx} style={styles.entryContainer}>
+          <Text style={styles.entryTitle}>{entry.title || entry.name}</Text>
+          {entry.description && <Text style={styles.textBlock}>{entry.description}</Text>}
+          {entry.technologies && (
+            <Text style={styles.entryDetails}>
+              Technologies: {Array.isArray(entry.technologies) ? entry.technologies.join(', ') : entry.technologies}
+            </Text>
+          )}
         </View>
       )
     }
-    return null
-  }
 
-  // Render projects block
-  const renderProjectsBlock = (block: ContentBlock) => {
-    if (block.category === 'projects' && block.type === 'section') {
+    // Certification entry
+    if (isCertificationEntry(entry)) {
       return (
-        <View key={block.id}>
-          <Text style={styles.sectionTitle}>Projects</Text>
-          {Array.isArray(block.content) && block.content.map((project: any, idx: number) => (
-            <View key={idx} style={styles.experienceEntry}>
-              <Text style={styles.jobTitle}>{project.title || project.name}</Text>
-              {project.description && (
-                <Text style={styles.textBlock}>{project.description}</Text>
-              )}
-              {project.technologies && (
-                <Text style={styles.dates}>Technologies: {project.technologies.join(', ')}</Text>
-              )}
-            </View>
-          ))}
+        <View key={idx} style={styles.entryContainer}>
+          <Text style={styles.entryTitle}>{entry.name || entry.title}</Text>
+          <Text style={styles.entrySubtitle}>{entry.issuer}</Text>
+          {entry.date && <Text style={styles.entryDetails}>{entry.date}</Text>}
         </View>
       )
     }
+
+    // Fallback: render as text if possible
+    const textContent = extractTextContent(entry)
+    if (textContent) {
+      return <Text key={idx} style={styles.textBlock}>{textContent}</Text>
+    }
+
     return null
   }
 
-  // Render certifications block
-  const renderCertificationsBlock = (block: ContentBlock) => {
-    if (block.category === 'certifications' && block.type === 'section') {
-      return (
-        <View key={block.id}>
-          <Text style={styles.sectionTitle}>Certifications</Text>
-          {Array.isArray(block.content) && block.content.map((cert: any, idx: number) => (
-            <View key={idx} style={styles.educationEntry}>
-              <Text style={styles.degree}>{cert.name || cert.title}</Text>
-              {cert.issuer && <Text style={styles.school}>{cert.issuer}</Text>}
-              {cert.date && <Text style={styles.year}>{cert.date}</Text>}
-            </View>
-          ))}
-        </View>
-      )
+  // Group blocks by category (excluding contact)
+  const contentBlocks = mainBlocks.filter(b => b.category !== 'contact')
+  const groupedBlocks: { [category: string]: ContentBlock[] } = {}
+  contentBlocks.forEach(block => {
+    if (!groupedBlocks[block.category]) {
+      groupedBlocks[block.category] = []
     }
-    return null
-  }
-
-  // Render text block (summary, objective, etc.)
-  const renderTextBlock = (block: ContentBlock) => {
-    if (block.type === 'text') {
-      return (
-        <View key={block.id}>
-          <Text style={styles.sectionTitle}>{block.category.toUpperCase()}</Text>
-          <Text style={styles.textBlock}>{block.content}</Text>
-        </View>
-      )
-    }
-    return null
-  }
-
-  // Generic block renderer
-  const renderBlock = (block: ContentBlock) => {
-    switch (block.category) {
-      case 'contact':
-        return null // Already rendered in header
-      case 'experience':
-        return renderExperienceBlock(block)
-      case 'education':
-        return renderEducationBlock(block)
-      case 'skills':
-        return renderSkillsBlock(block)
-      case 'projects':
-        return renderProjectsBlock(block)
-      case 'certifications':
-        return renderCertificationsBlock(block)
-      case 'custom':
-        return renderTextBlock(block)
-      default:
-        return renderTextBlock(block)
-    }
-  }
+    groupedBlocks[block.category].push(block)
+  })
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header Section */}
-        {headerBlocks.map(block => renderHeaderBlock(block))}
+        {renderHeader()}
 
         {/* Main Section with dividers between major sections */}
         <View style={styles.main}>
-          {mainBlocks.map((block, idx) => (
-            <React.Fragment key={block.id}>
-              {idx > 0 && <View style={styles.sectionDivider} />}
-              {renderBlock(block)}
-            </React.Fragment>
-          ))}
+          {Object.keys(groupedBlocks).map(category => {
+            const categoryBlocks = groupedBlocks[category]
+            const sectionTitle = getCategoryTitle(category)
+
+            return (
+              <View key={category}>
+                <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+                {categoryBlocks.map((block, idx) => (
+                  <View key={block.id || idx}>
+                    {renderBlockContent(block)}
+                  </View>
+                ))}
+              </View>
+            )
+          })}
         </View>
 
         {/* Footer - Add warnings if any */}

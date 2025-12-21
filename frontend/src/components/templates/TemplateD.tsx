@@ -1,17 +1,20 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import {
+  extractTextContent,
+  getCategoryTitle,
+  isArrayContent,
+  isExperienceEntry,
+  isEducationEntry,
+  isProjectEntry,
+  isCertificationEntry
+} from './templateHelpers'
 
 interface ContentBlock {
   id: string
-  type: 'header' | 'section' | 'list' | 'text'
-  category: 'contact' | 'experience' | 'education' | 'skills' | 'certifications' | 'projects' | 'custom' | 'summary'
+  category: string  // Generic - any string allowed
   priority: number
   content: any
-  metadata: {
-    estimatedLines: number
-    isOptional: boolean
-    keywords: string[]
-  }
 }
 
 interface LayoutDecision {
@@ -38,11 +41,7 @@ interface TemplateDProps {
   layout: LayoutDecision
 }
 
-// Template D: Compact Dense Layout
-// Ultra-efficient use of space for senior professionals
-// Two-column main content, compact headers, multi-column skills
-// Perfect for content-heavy resumes
-
+// Template D: Compact Dense - Ultra-efficient space utilization
 const createStyles = (_layout: LayoutDecision) => {
   return StyleSheet.create({
     page: {
@@ -53,91 +52,62 @@ const createStyles = (_layout: LayoutDecision) => {
       color: '#1a1a1a',
       backgroundColor: '#ffffff',
     },
-    // Compact header
     header: {
-      marginBottom: 12,
-      paddingBottom: 8,
-      borderBottom: '2px solid #000000',
+      marginBottom: 10,
+      borderBottom: '1.5px solid #2a2a2a',
+      paddingBottom: 6,
     },
     name: {
       fontSize: 20,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 2,
+      marginBottom: 3,
       color: '#000000',
-      letterSpacing: 0.8,
-    },
-    jobTitle: {
-      fontSize: 11,
-      color: '#333333',
-      marginBottom: 4,
-      fontFamily: 'Helvetica-Oblique',
+      letterSpacing: 0.5,
     },
     contactInfo: {
       fontSize: 8,
-      color: '#555555',
+      color: '#444444',
+      display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 4,
     },
     contactItem: {
-      marginRight: 10,
+      marginRight: 8,
+      fontSize: 8,
     },
-    contactSeparator: {
-      marginHorizontal: 4,
-      color: '#999999',
-    },
-    // Main content
     main: {
       flex: 1,
     },
-    // Compact section headers
     sectionTitle: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
-      marginTop: 10,
-      marginBottom: 5,
+      marginTop: 8,
+      marginBottom: 4,
       color: '#000000',
       textTransform: 'uppercase',
       letterSpacing: 0.8,
-      backgroundColor: '#f0f0f0',
-      padding: 3,
-      paddingLeft: 6,
+      borderBottom: '1px solid #cccccc',
+      paddingBottom: 2,
     },
-    // Summary section
-    summary: {
-      fontSize: 9,
-      lineHeight: 1.4,
-      marginBottom: 4,
-      color: '#2a2a2a',
-      textAlign: 'justify',
-    },
-    // Two-column layout for experience
-    twoColumnContainer: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    column: {
-      flex: 1,
-    },
-    // Experience entries - ultra compact
     experienceEntry: {
-      marginBottom: 7,
+      marginBottom: 5,
     },
-    positionLine: {
+    jobTitleRow: {
+      display: 'flex',
       flexDirection: 'row',
       justifyContent: 'space-between',
       marginBottom: 1,
     },
-    position: {
-      fontSize: 9.5,
+    jobTitle: {
+      fontSize: 10,
       fontFamily: 'Helvetica-Bold',
-      color: '#000000',
-      flex: 1,
+      color: '#1a1a1a',
     },
     dates: {
       fontSize: 8,
       color: '#666666',
-      fontFamily: 'Helvetica-Oblique',
+      textAlign: 'right',
     },
     company: {
       fontSize: 9,
@@ -146,20 +116,21 @@ const createStyles = (_layout: LayoutDecision) => {
       color: '#444444',
     },
     bulletList: {
-      paddingLeft: 10,
+      paddingLeft: 12,
     },
     bullet: {
-      fontSize: 8.5,
-      marginBottom: 1.5,
+      fontSize: 9,
+      marginBottom: 2,
+      display: 'flex',
       flexDirection: 'row',
-      color: '#2a2a2a',
+      lineHeight: 1.3,
     },
     bulletSymbol: {
       marginRight: 4,
-      fontSize: 7,
+      fontSize: 8,
     },
-    // Multi-column skills grid
     skillsGrid: {
+      display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 3,
@@ -175,75 +146,60 @@ const createStyles = (_layout: LayoutDecision) => {
       width: '23%',
       textAlign: 'center',
     },
-    // Compact education
-    educationContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-    },
     educationEntry: {
-      marginBottom: 5,
-      width: '48%',
+      marginBottom: 4,
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    educationLeft: {
+      flex: 1,
     },
     degree: {
-      fontSize: 9,
+      fontSize: 10,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 1,
-      color: '#000000',
     },
     school: {
-      fontSize: 8.5,
-      marginBottom: 0.5,
+      fontSize: 9,
       color: '#444444',
     },
     year: {
       fontSize: 8,
       color: '#666666',
+      textAlign: 'right',
     },
-    // Projects - compact
+    textBlock: {
+      fontSize: 9,
+      lineHeight: 1.3,
+      marginBottom: 4,
+      textAlign: 'justify',
+    },
+    twoColumnContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 12,
+    },
+    column: {
+      flex: 1,
+    },
     projectEntry: {
-      marginBottom: 6,
+      marginBottom: 4,
     },
     projectTitle: {
-      fontSize: 9.5,
-      fontFamily: 'Helvetica-Bold',
-      marginBottom: 1,
-      color: '#000000',
-    },
-    projectDescription: {
-      fontSize: 8.5,
-      lineHeight: 1.3,
-      marginBottom: 2,
-      color: '#2a2a2a',
-    },
-    techStack: {
-      fontSize: 8,
-      color: '#666666',
-      fontFamily: 'Helvetica-Oblique',
-    },
-    // Certifications - inline
-    certContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-    },
-    certEntry: {
-      marginBottom: 4,
-      width: '48%',
-    },
-    certName: {
       fontSize: 9,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 1,
-      color: '#000000',
     },
-    certIssuer: {
+    projectDescription: {
       fontSize: 8,
-      color: '#444444',
+      lineHeight: 1.3,
+      marginBottom: 1,
     },
-    certDate: {
-      fontSize: 7.5,
+    projectTech: {
+      fontSize: 7,
       color: '#666666',
+      fontFamily: 'Helvetica-Oblique',
     },
   })
 }
@@ -258,227 +214,196 @@ const TemplateD: React.FC<TemplateDProps> = ({ blocks, layout }) => {
     return orderA - orderB
   })
 
+  // Separate blocks by section
+  const headerBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'header')
+  const mainBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'main')
+
   // Find contact block for header
   const contactBlock = blocks.find(b => b.category === 'contact')
 
-  // Group blocks by category
-  const summaryBlocks = sortedBlocks.filter(b => b.category === 'summary')
-  const experienceBlocks = sortedBlocks.filter(b => b.category === 'experience')
-  const educationBlocks = sortedBlocks.filter(b => b.category === 'education')
-  const skillsBlocks = sortedBlocks.filter(b => b.category === 'skills')
-  const projectBlocks = sortedBlocks.filter(b => b.category === 'projects')
-  const certBlocks = sortedBlocks.filter(b => b.category === 'certifications')
+  // Render header (name + contact info)
+  const renderHeader = () => {
+    if (!contactBlock) return null
 
-  // Split experience into two columns if there are many entries
-  const midpoint = Math.ceil(experienceBlocks.length / 2)
-  const experienceCol1 = experienceBlocks.slice(0, midpoint)
-  const experienceCol2 = experienceBlocks.slice(midpoint)
-
-  // Render header
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.name}>{contactBlock?.content.name || 'Your Name'}</Text>
-      {contactBlock?.content.title && (
-        <Text style={styles.jobTitle}>{contactBlock.content.title}</Text>
-      )}
-      <View style={styles.contactInfo}>
-        {contactBlock?.content.email && (
-          <Text style={styles.contactItem}>{contactBlock.content.email}</Text>
-        )}
-        {contactBlock?.content.phone && (
-          <>
-            <Text style={styles.contactSeparator}>|</Text>
-            <Text style={styles.contactItem}>{contactBlock.content.phone}</Text>
-          </>
-        )}
-        {contactBlock?.content.location && (
-          <>
-            <Text style={styles.contactSeparator}>|</Text>
-            <Text style={styles.contactItem}>{contactBlock.content.location}</Text>
-          </>
-        )}
-        {contactBlock?.content.linkedin && (
-          <>
-            <Text style={styles.contactSeparator}>|</Text>
-            <Text style={styles.contactItem}>{contactBlock.content.linkedin}</Text>
-          </>
-        )}
-        {contactBlock?.content.github && (
-          <>
-            <Text style={styles.contactSeparator}>|</Text>
-            <Text style={styles.contactItem}>{contactBlock.content.github}</Text>
-          </>
-        )}
-      </View>
-    </View>
-  )
-
-  // Render summary
-  const renderSummary = (block: ContentBlock) => (
-    <View key={block.id}>
-      <Text style={styles.sectionTitle}>Professional Summary</Text>
-      <Text style={styles.summary}>{block.content?.text || block.content}</Text>
-    </View>
-  )
-
-  // Render experience entry
-  const renderExperience = (block: ContentBlock) => (
-    <View key={block.id} style={styles.experienceEntry}>
-      <View style={styles.positionLine}>
-        <Text style={styles.position}>{block.content.title || block.content.position}</Text>
-        {(block.content.startDate || block.content.endDate) && (
-          <Text style={styles.dates}>
-            {block.content.startDate || ''}{block.content.startDate && block.content.endDate && ' - '}{block.content.endDate || ''}
-          </Text>
-        )}
-      </View>
-      <Text style={styles.company}>{block.content.company}</Text>
-      {block.content.bullets && Array.isArray(block.content.bullets) && (
-        <View style={styles.bulletList}>
-          {block.content.bullets.map((bullet: string, idx: number) => (
-            <View key={idx} style={styles.bullet}>
-              <Text style={styles.bulletSymbol}>•</Text>
-              <Text>{bullet}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  )
-
-  // Render education
-  const renderEducation = (block: ContentBlock) => {
-    const entries = Array.isArray(block.content) ? block.content : [block.content]
-    return entries.map((entry: any, idx: number) => (
-      <View key={`${block.id}-${idx}`} style={styles.educationEntry}>
-        <Text style={styles.degree}>{entry.degree}</Text>
-        <Text style={styles.school}>{entry.school || entry.institution}</Text>
-        {entry.year && <Text style={styles.year}>{entry.year}</Text>}
-      </View>
-    ))
-  }
-
-  // Render skills
-  const renderSkills = (block: ContentBlock) => {
-    const skills = Array.isArray(block.content) ? block.content :
-                   (block.content?.items ? (Array.isArray(block.content.items) ? block.content.items : []) : [])
+    const { content } = contactBlock
 
     return (
-      <View key={block.id} style={styles.skillsGrid}>
-        {skills.map((skill: string, idx: number) => (
-          <Text key={idx} style={styles.skillItem}>{skill}</Text>
-        ))}
+      <View style={styles.header}>
+        <Text style={styles.name}>{content.name || 'Your Name'}</Text>
+        <View style={styles.contactInfo}>
+          {content.email && <Text style={styles.contactItem}>{content.email}</Text>}
+          {content.phone && <Text style={styles.contactItem}>{content.phone}</Text>}
+          {content.location && <Text style={styles.contactItem}>{content.location}</Text>}
+          {content.linkedin && <Text style={styles.contactItem}>{content.linkedin}</Text>}
+          {content.github && <Text style={styles.contactItem}>{content.github}</Text>}
+          {content.website && <Text style={styles.contactItem}>{content.website}</Text>}
+        </View>
       </View>
     )
   }
 
-  // Render project
-  const renderProject = (block: ContentBlock) => (
-    <View key={block.id} style={styles.projectEntry}>
-      <Text style={styles.projectTitle}>{block.content.title || block.content.name}</Text>
-      {block.content.description && (
-        <Text style={styles.projectDescription}>{block.content.description}</Text>
-      )}
-      {block.content.bullets && Array.isArray(block.content.bullets) && (
-        <View style={styles.bulletList}>
-          {block.content.bullets.map((bullet: string, idx: number) => (
-            <View key={idx} style={styles.bullet}>
-              <Text style={styles.bulletSymbol}>•</Text>
-              <Text>{bullet}</Text>
-            </View>
+  // Render single block content (NO section title - that's handled in grouping)
+  const renderBlockContent = (block: ContentBlock) => {
+    const { content } = block
+
+    // CASE 1: Array of skills (simple string array)
+    if (isArrayContent(content) && content.every((item: any) => typeof item === 'string')) {
+      return (
+        <View style={styles.skillsGrid}>
+          {content.map((skill: string, idx: number) => (
+            <Text key={idx} style={styles.skillItem}>{skill}</Text>
           ))}
         </View>
-      )}
-      {block.content.technologies && (
-        <Text style={styles.techStack}>
-          {Array.isArray(block.content.technologies) ? block.content.technologies.join(' • ') : block.content.technologies}
-        </Text>
-      )}
-    </View>
-  )
+      )
+    }
 
-  // Render certifications
-  const renderCert = (block: ContentBlock) => {
-    const certs = Array.isArray(block.content) ? block.content : [block.content]
-    return certs.map((cert: any, idx: number) => (
-      <View key={`${block.id}-${idx}`} style={styles.certEntry}>
-        <Text style={styles.certName}>{cert.name || cert.title}</Text>
-        {cert.issuer && <Text style={styles.certIssuer}>{cert.issuer}</Text>}
-        {cert.date && <Text style={styles.certDate}>{cert.date}</Text>}
-      </View>
-    ))
+    // CASE 2: Array of entries
+    if (isArrayContent(content)) {
+      return (
+        <>
+          {content.map((entry: any, idx: number) => renderEntry(entry, idx))}
+        </>
+      )
+    }
+
+    // CASE 3: Single object entry (experience, education, project, certification)
+    if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+      if (isExperienceEntry(content) || isEducationEntry(content) || isProjectEntry(content) || isCertificationEntry(content)) {
+        return renderEntry(content, 0)
+      }
+    }
+
+    // CASE 4: Single text content
+    const textContent = extractTextContent(content)
+    if (textContent) {
+      return <Text style={styles.textBlock}>{textContent}</Text>
+    }
+
+    return null
   }
+
+  // Render individual entry (compact format for Template D)
+  const renderEntry = (entry: any, idx: number) => {
+    // Experience entry (compact format with dates on right)
+    if (isExperienceEntry(entry)) {
+      return (
+        <View key={idx} style={styles.experienceEntry}>
+          <View style={styles.jobTitleRow}>
+            <Text style={styles.jobTitle}>{entry.title || entry.position}</Text>
+            {(entry.startDate || entry.endDate || entry.dates) && (
+              <Text style={styles.dates}>
+                {entry.dates || `${entry.startDate || ''} ${entry.startDate && entry.endDate ? '- ' : ''}${entry.endDate || ''}`}
+              </Text>
+            )}
+          </View>
+          <Text style={styles.company}>{entry.company}</Text>
+          {entry.bullets && Array.isArray(entry.bullets) && (
+            <View style={styles.bulletList}>
+              {entry.bullets.map((bullet: string, bIdx: number) => (
+                <View key={bIdx} style={styles.bullet}>
+                  <Text style={styles.bulletSymbol}>•</Text>
+                  <Text>{bullet}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )
+    }
+
+    // Education entry (inline format with year on right)
+    if (isEducationEntry(entry)) {
+      return (
+        <View key={idx} style={styles.educationEntry}>
+          <View style={styles.educationLeft}>
+            <Text style={styles.degree}>{entry.degree}</Text>
+            <Text style={styles.school}>{entry.school || entry.institution}</Text>
+            {entry.gpa && <Text style={styles.school}>GPA: {entry.gpa}</Text>}
+          </View>
+          {(entry.graduationDate || entry.year) && (
+            <Text style={styles.year}>{entry.graduationDate || entry.year}</Text>
+          )}
+        </View>
+      )
+    }
+
+    // Project entry (compact)
+    if (isProjectEntry(entry)) {
+      return (
+        <View key={idx} style={styles.projectEntry}>
+          <Text style={styles.projectTitle}>{entry.title || entry.name}</Text>
+          {entry.description && (
+            <Text style={styles.projectDescription}>{entry.description}</Text>
+          )}
+          {entry.technologies && (
+            <Text style={styles.projectTech}>
+              Technologies: {Array.isArray(entry.technologies) ? entry.technologies.join(', ') : entry.technologies}
+            </Text>
+          )}
+        </View>
+      )
+    }
+
+    // Certification entry (inline format like education)
+    if (isCertificationEntry(entry)) {
+      return (
+        <View key={idx} style={styles.educationEntry}>
+          <View style={styles.educationLeft}>
+            <Text style={styles.degree}>{entry.name || entry.title}</Text>
+            {entry.issuer && <Text style={styles.school}>{entry.issuer}</Text>}
+          </View>
+          {entry.date && <Text style={styles.year}>{entry.date}</Text>}
+        </View>
+      )
+    }
+
+    // Fallback: render as text if possible
+    const textContent = extractTextContent(entry)
+    if (textContent) {
+      return <Text key={idx} style={styles.textBlock}>{textContent}</Text>
+    }
+
+    return null
+  }
+
+  // Group blocks by category (excluding contact)
+  const contentBlocks = mainBlocks.filter(b => b.category !== 'contact')
+  const groupedBlocks: { [category: string]: ContentBlock[] } = {}
+  contentBlocks.forEach(block => {
+    if (!groupedBlocks[block.category]) {
+      groupedBlocks[block.category] = []
+    }
+    groupedBlocks[block.category].push(block)
+  })
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Compact Header */}
+        {/* Header Section */}
         {renderHeader()}
 
-        {/* Main Content */}
+        {/* Main Section */}
         <View style={styles.main}>
-          {/* Summary */}
-          {summaryBlocks.map(block => renderSummary(block))}
+          {Object.keys(groupedBlocks).map(category => {
+            const categoryBlocks = groupedBlocks[category]
+            const sectionTitle = getCategoryTitle(category)
 
-          {/* Skills - Multi-column grid */}
-          {skillsBlocks.length > 0 && (
-            <View>
-              <Text style={styles.sectionTitle}>Core Skills</Text>
-              {skillsBlocks.map(block => renderSkills(block))}
-            </View>
-          )}
-
-          {/* Experience - Two columns if many entries */}
-          {experienceBlocks.length > 0 && (
-            <View>
-              <Text style={styles.sectionTitle}>Professional Experience</Text>
-              {experienceBlocks.length > 3 ? (
-                <View style={styles.twoColumnContainer}>
-                  <View style={styles.column}>
-                    {experienceCol1.map(block => renderExperience(block))}
+            return (
+              <View key={category}>
+                <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+                {categoryBlocks.map((block, idx) => (
+                  <View key={block.id || idx}>
+                    {renderBlockContent(block)}
                   </View>
-                  <View style={styles.column}>
-                    {experienceCol2.map(block => renderExperience(block))}
-                  </View>
-                </View>
-              ) : (
-                experienceBlocks.map(block => renderExperience(block))
-              )}
-            </View>
-          )}
-
-          {/* Education - Two columns */}
-          {educationBlocks.length > 0 && (
-            <View>
-              <Text style={styles.sectionTitle}>Education</Text>
-              <View style={styles.educationContainer}>
-                {educationBlocks.map(block => renderEducation(block))}
+                ))}
               </View>
-            </View>
-          )}
-
-          {/* Projects */}
-          {projectBlocks.length > 0 && (
-            <View>
-              <Text style={styles.sectionTitle}>Projects</Text>
-              {projectBlocks.map(block => renderProject(block))}
-            </View>
-          )}
-
-          {/* Certifications - Two columns */}
-          {certBlocks.length > 0 && (
-            <View>
-              <Text style={styles.sectionTitle}>Certifications</Text>
-              <View style={styles.certContainer}>
-                {certBlocks.map(block => renderCert(block))}
-              </View>
-            </View>
-          )}
+            )
+          })}
         </View>
 
         {/* Footer - Add warnings if any */}
         {layout.warnings.length > 0 && (
-          <View style={{ marginTop: 'auto', paddingTop: 6, borderTop: '1px solid #e0e0e0' }}>
+          <View style={{ marginTop: 'auto', paddingTop: 6, borderTop: '0.5px solid #eeeeee' }}>
             <Text style={{ fontSize: 7, color: '#999999' }}>
               Note: {layout.warnings.join(', ')}
             </Text>
