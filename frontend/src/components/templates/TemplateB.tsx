@@ -41,9 +41,9 @@ interface TemplateBProps {
   layout: LayoutDecision
 }
 
-// Template B: Modern Two-Column Layout
-// Sidebar (30%): Skills, Education, Certifications, Contact info
-// Main (70%): Name, Summary, Experience, Projects
+// Template B: Modern Two-Column Layout with Sidebar
+// Sidebar (35%): Contact, Skills with visual bars, Education, Certifications
+// Main (65%): Name, Summary, Experience, Projects
 
 const createStyles = (_layout: LayoutDecision) => {
   return StyleSheet.create({
@@ -55,10 +55,10 @@ const createStyles = (_layout: LayoutDecision) => {
       fontFamily: 'Helvetica',
       fontSize: 10,
       lineHeight: 1.4,
-      color: '#333333',
+      color: '#2d3748',
       flexDirection: 'row', // Two-column layout
     },
-    // Sidebar (left column)
+    // Sidebar (left column) - visually distinct
     sidebar: {
       width: '30%',
       backgroundColor: '#F5F7FA',
@@ -67,44 +67,61 @@ const createStyles = (_layout: LayoutDecision) => {
       borderRight: '2px solid #E2E8F0',
     },
     sidebarSection: {
-      marginBottom: 16,
+      marginBottom: 20,
+      paddingBottom: 16,
+      borderBottom: '1px solid rgba(255,255,255,0.15)',
     },
     sidebarTitle: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 8,
-      color: '#2D3748',
+      marginBottom: 10,
+      color: '#ffffff',
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      letterSpacing: 1,
     },
     contactItem: {
-      fontSize: 9,
-      marginBottom: 4,
-      color: '#4A5568',
+      fontSize: 8.5,
+      marginBottom: 6,
+      color: '#e2e8f0',
+      lineHeight: 1.5,
     },
-    skillItem: {
+    skillItemContainer: {
+      marginBottom: 8,
+    },
+    skillName: {
       fontSize: 9,
       marginBottom: 3,
-      paddingLeft: 8,
-      color: '#4A5568',
+      color: '#e2e8f0',
+      fontFamily: 'Helvetica-Bold',
+    },
+    skillBarBackground: {
+      height: 4,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      borderRadius: 2,
+      overflow: 'hidden',
+    },
+    skillBarFill: {
+      height: 4,
+      backgroundColor: '#4299e1',
+      borderRadius: 2,
     },
     educationEntry: {
-      marginBottom: 10,
+      marginBottom: 12,
     },
     degree: {
-      fontSize: 10,
+      fontSize: 9.5,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
-      color: '#2D3748',
+      color: '#ffffff',
     },
     school: {
-      fontSize: 9,
-      marginBottom: 1,
-      color: '#4A5568',
+      fontSize: 8.5,
+      marginBottom: 2,
+      color: '#cbd5e0',
     },
     year: {
       fontSize: 8,
-      color: '#718096',
+      color: '#a0aec0',
     },
     // Main content (right column)
     main: {
@@ -113,9 +130,9 @@ const createStyles = (_layout: LayoutDecision) => {
       paddingRight: 30,
     },
     header: {
-      marginBottom: 20,
-      paddingBottom: 12,
-      borderBottom: '3px solid #4299E1',
+      marginBottom: 24,
+      paddingBottom: 14,
+      borderBottom: '4px solid #4299e1',
     },
     name: {
       fontSize: 24,
@@ -131,14 +148,15 @@ const createStyles = (_layout: LayoutDecision) => {
       lineHeight: 1.3,
     },
     sectionTitle: {
-      fontSize: 13,
+      fontSize: 14,
       fontFamily: 'Helvetica-Bold',
-      marginTop: 16,
-      marginBottom: 8,
-      color: '#2D3748',
+      marginTop: 18,
+      marginBottom: 10,
+      color: '#1a202c',
       textTransform: 'uppercase',
-      borderBottom: '2px solid #E2E8F0',
-      paddingBottom: 4,
+      letterSpacing: 1,
+      paddingLeft: 12,
+      borderLeft: '4px solid #4299e1',
     },
     experienceEntry: {
       marginBottom: 12,
@@ -182,17 +200,31 @@ const createStyles = (_layout: LayoutDecision) => {
       color: '#4A5568',
     },
     certEntry: {
-      marginBottom: 10,
+      marginBottom: 12,
     },
     certName: {
-      fontSize: 10,
+      fontSize: 9.5,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
-      color: '#2D3748',
+      color: '#ffffff',
     },
     certIssuer: {
+      fontSize: 8.5,
+      color: '#cbd5e0',
+    },
+    languageItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    languageName: {
       fontSize: 9,
-      color: '#4A5568',
+      color: '#e2e8f0',
+    },
+    languageLevel: {
+      fontSize: 8,
+      color: '#a0aec0',
+      fontFamily: 'Helvetica-Oblique',
     },
   })
 }
