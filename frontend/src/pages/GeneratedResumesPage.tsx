@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, Fragment } from 'react'
 import { supabase } from '../lib/supabase'
-import { Loader2, X, Trash2, ChevronDown, ChevronRight, ExternalLink, FileText, Sparkles } from 'lucide-react'
+import { Loader2, X, Trash2, ChevronDown, ChevronRight, ExternalLink, Sparkles } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -146,12 +146,47 @@ export default function GeneratedResumesPage() {
 
     const { data: jobs, count } = await supabase
       .from('jobs')
-      .select('*', { count: 'exact' })
+      .select('*, fit_score_breakdown, missing_skills, recommendations', { count: 'exact' })
       .eq('resume_id', resumeId)
       .order('created_at', { ascending: false })
 
     if (jobs) {
-      setAllJobs(jobs)
+      console.log('📊 [Jobs Loaded]', jobs.length, 'jobs')
+      console.log('📊 [First Job Data]', jobs[0])
+      if (jobs[0]) {
+        console.log('📊 [Missing Skills]', jobs[0].missing_skills)
+        console.log('📊 [Recommendations]', jobs[0].recommendations)
+        console.log('📊 [Fit Score Breakdown]', jobs[0].fit_score_breakdown)
+      }
+
+      // Parse JSONB data if it comes as string arrays
+      const parsedJobs = jobs.map(job => {
+        const parsed = { ...job }
+
+        // Parse missing_skills if it's an array of strings
+        if (Array.isArray(job.missing_skills) && job.missing_skills.length > 0 && typeof job.missing_skills[0] === 'string') {
+          try {
+            parsed.missing_skills = job.missing_skills.map((s: string) => JSON.parse(s))
+            console.log('✅ Parsed missing_skills for job', job.id)
+          } catch (e) {
+            console.error('❌ Failed to parse missing_skills:', e)
+          }
+        }
+
+        // Parse recommendations if it's an array of strings
+        if (Array.isArray(job.recommendations) && job.recommendations.length > 0 && typeof job.recommendations[0] === 'string') {
+          try {
+            parsed.recommendations = job.recommendations.map((s: string) => JSON.parse(s))
+            console.log('✅ Parsed recommendations for job', job.id)
+          } catch (e) {
+            console.error('❌ Failed to parse recommendations:', e)
+          }
+        }
+
+        return parsed
+      })
+
+      setAllJobs(parsedJobs)
       setExistingJobsCount(count || 0)
 
       // Check if any jobs are still generating
@@ -265,20 +300,21 @@ export default function GeneratedResumesPage() {
     }
   }
 
-  const handleSwitchTemplate = async (newTemplate: string) => {
-    if (!previewJob || !userId) return
+  const handleSwitchTemplate = async (newTemplate: string, targetJob?: BulkJob) => {
+    const jobToSwitch = targetJob || previewJob
+    if (!jobToSwitch || !userId) return
 
     setIsSwitchingTemplate(true)
 
     try {
-      console.log('🔄 [Frontend PDF] Switching template from', previewJob.template_used, 'to', newTemplate)
+      console.log('🔄 [Frontend PDF] Switching template from', jobToSwitch.template_used, 'to', newTemplate)
 
       // ALWAYS fetch fresh content from backend (don't trust database tailored_json - it might be in pdfmake format)
       console.log('📥 [Frontend PDF] Fetching fresh content from backend...')
 
       const { data, error } = await supabase.functions.invoke('generate-tailored-resume', {
         body: {
-          jobId: previewJob.id,
+          jobId: jobToSwitch.id,
           templateName: newTemplate,
           returnContentOnly: true // Signal we only want the content, not PDF rendering
         }
@@ -322,14 +358,24 @@ export default function GeneratedResumesPage() {
       const pdfObjectUrl = URL.createObjectURL(pdfBlob)
       console.log('📄 [Frontend PDF] Created object URL for preview:', pdfObjectUrl)
 
-      // Update preview state with new template and in-memory PDF URL
-      setPreviewTemplate(newTemplate)
-      setPreviewJob({
-        ...previewJob,
-        template_used: newTemplate,
-        pdf_url: pdfObjectUrl // Use object URL instead of uploaded URL
-      })
-      console.log('✅ [Frontend PDF] Preview updated with new template (in-memory, not uploaded)')
+      // Update the job in the list
+      const updatedJobs = allJobs.map(j =>
+        j.id === jobToSwitch.id
+          ? { ...j, template_used: newTemplate, pdf_url: pdfObjectUrl }
+          : j
+      )
+      setAllJobs(updatedJobs)
+
+      // If this is the preview job, update it too
+      if (previewJob?.id === jobToSwitch.id) {
+        setPreviewTemplate(newTemplate)
+        setPreviewJob({
+          ...jobToSwitch,
+          template_used: newTemplate,
+          pdf_url: pdfObjectUrl
+        })
+      }
+      console.log('✅ [Frontend PDF] Job updated with new template (in-memory, not uploaded)')
 
       toast({
         title: "Template switched",
@@ -451,13 +497,30 @@ export default function GeneratedResumesPage() {
                         </td>
                         <td className="p-4">
                           {job.fit_score ? (
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm font-semibold text-primary">{job.fit_score}%</div>
-                              <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary"
-                                  style={{ width: `${job.fit_score}%` }}
-                                />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm font-semibold text-primary">{job.fit_score}%</div>
+                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-primary"
+                                    style={{ width: `${job.fit_score}%` }}
+                                  />
+                                </div>
+                                {job.fit_score >= 80 ? '🟢' : job.fit_score >= 60 ? '🟡' : '🔴'}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {job.missing_skills && Array.isArray(job.missing_skills) && job.missing_skills.length > 0 && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <span className="text-amber-600">⚠️</span>
+                                    {job.missing_skills.length} skill{job.missing_skills.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                                {job.recommendations && Array.isArray(job.recommendations) && job.recommendations.length > 0 && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <span className="text-blue-600">💡</span>
+                                    {job.recommendations.length} tip{job.recommendations.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -537,55 +600,285 @@ export default function GeneratedResumesPage() {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr key={`${job.id}-expanded`} className="bg-muted/30 border-b">
+                        <tr key={`${job.id}-expanded`} className="bg-gradient-to-br from-muted/30 to-muted/10 border-b">
                           <td colSpan={7} className="p-6">
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                  <FileText className="w-4 h-4" />
-                                  Job Description
-                                </h4>
-                                <div className="text-sm text-muted-foreground bg-background rounded-md p-4 whitespace-pre-wrap border">
-                                  {job.job_description || 'No description available'}
-                                </div>
+                            <div className="space-y-6">
+                              {/* Top Section: Mini-Cards Grid */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Fit Score Card */}
+                                {job.fit_score && (
+                                  <Card className="p-4 bg-background/80 backdrop-blur-sm border-2">
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fit Score</h4>
+                                        {job.fit_score >= 80 ? '🟢' : job.fit_score >= 60 ? '🟡' : '🔴'}
+                                      </div>
+                                      <div className="text-4xl font-bold text-primary">{job.fit_score}%</div>
+                                      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full bg-gradient-to-r from-primary to-primary/70 transition-all"
+                                          style={{ width: `${job.fit_score}%` }}
+                                        />
+                                      </div>
+                                      <p className="text-xs text-muted-foreground">
+                                        {job.fit_score >= 80 ? 'Excellent match' : job.fit_score >= 60 ? 'Good match' : 'Needs improvement'}
+                                      </p>
+
+                                      {/* Breakdown */}
+                                      {job.fit_score_breakdown && (
+                                        <div className="pt-3 border-t space-y-2">
+                                          <p className="text-xs font-medium text-muted-foreground">Breakdown</p>
+                                          <div className="space-y-1.5">
+                                            <div className="flex justify-between text-xs">
+                                              <span>Keywords</span>
+                                              <span className="font-medium">{job.fit_score_breakdown.keywords}%</span>
+                                            </div>
+                                            <div className="flex justify-between text-xs">
+                                              <span>Experience</span>
+                                              <span className="font-medium">{job.fit_score_breakdown.experience}%</span>
+                                            </div>
+                                            <div className="flex justify-between text-xs">
+                                              <span>Qualifications</span>
+                                              <span className="font-medium">{job.fit_score_breakdown.qualifications}%</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Card>
+                                )}
+
+                                {/* Template Picker Card */}
+                                <Card className="p-4 bg-background/80 backdrop-blur-sm border-2 border-primary/20">
+                                  <div className="space-y-3">
+                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Template Picker</h4>
+                                    <p className="text-sm text-muted-foreground">Switch between styles</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {templates.map((template) => (
+                                        <button
+                                          key={template.id}
+                                          onClick={() => handleSwitchTemplate(template.id, job)}
+                                          disabled={isSwitchingTemplate || job.template_used === template.id}
+                                          className={`relative rounded-lg border-2 p-2 text-left transition-all ${
+                                            job.template_used === template.id
+                                              ? 'border-primary bg-primary/5'
+                                              : 'border-border hover:border-primary/50'
+                                          } ${isSwitchingTemplate ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-8 h-10 bg-muted rounded overflow-hidden flex-shrink-0">
+                                              <img
+                                                src={template.previewThumb}
+                                                alt={template.name}
+                                                className="w-full h-full object-cover"
+                                              />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-medium truncate">{template.id}</p>
+                                              {job.template_used === template.id && (
+                                                <p className="text-[10px] text-primary">Active</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </Card>
+
+                                {/* Download Card */}
+                                {job.pdf_url && (
+                                  <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border-2 border-primary/30">
+                                    <div className="space-y-3">
+                                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ready to Use</h4>
+                                      <p className="text-sm text-muted-foreground">Your tailored resume</p>
+                                      <div className="space-y-2">
+                                        <Button
+                                          className="w-full"
+                                          size="lg"
+                                          onClick={() => {
+                                            const link = document.createElement('a')
+                                            link.href = job.pdf_url!
+                                            link.download = `resume_${job.job_title.replace(/\s+/g, '_')}.pdf`
+                                            link.click()
+                                          }}
+                                        >
+                                          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                          </svg>
+                                          Download PDF
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          className="w-full"
+                                          onClick={() => {
+                                            setPreviewJob(job)
+                                            setPreviewTemplate(job.template_used || 'A')
+                                          }}
+                                        >
+                                          <ExternalLink className="w-4 h-4 mr-2" />
+                                          Preview
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                )}
                               </div>
 
-                              {job.job_url && (
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-2">Job URL</h4>
-                                  <a
-                                    href={job.job_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-                                  >
-                                    {job.job_url} <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                </div>
+                              {/* Skills & Recommendations Section */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Missing Skills */}
+                                {job.missing_skills && Array.isArray(job.missing_skills) && job.missing_skills.length > 0 && (
+                                  <Card className="p-4 bg-background/80">
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                                          <span className="text-amber-600">⚠️</span>
+                                          Add These Skills
+                                        </h4>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {job.missing_skills.length}
+                                        </Badge>
+                                      </div>
+                                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {job.missing_skills.slice(0, 5).map((skill, idx) => (
+                                          <div key={idx} className="flex items-start justify-between gap-2 p-2 rounded-lg bg-muted/50">
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium truncate">{skill.skill}</p>
+                                              <p className="text-xs text-muted-foreground line-clamp-1">{skill.reason}</p>
+                                            </div>
+                                            <Badge
+                                              variant={skill.importance === 'high' ? 'destructive' : skill.importance === 'medium' ? 'default' : 'secondary'}
+                                              className="text-[10px] flex-shrink-0"
+                                            >
+                                              {skill.importance}
+                                            </Badge>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {job.missing_skills.length > 5 && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full text-xs"
+                                          onClick={() => {
+                                            setPreviewJob(job)
+                                            setPreviewTemplate(job.template_used || 'A')
+                                          }}
+                                        >
+                                          View all {job.missing_skills.length} skills →
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </Card>
+                                )}
+
+                                {/* Recommendations */}
+                                {job.recommendations && Array.isArray(job.recommendations) && job.recommendations.length > 0 && (
+                                  <Card className="p-4 bg-background/80">
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                                          <span className="text-blue-600">💡</span>
+                                          Quick Wins
+                                        </h4>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {job.recommendations.length}
+                                        </Badge>
+                                      </div>
+                                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {job.recommendations
+                                          .sort((a, b) => {
+                                            const priorityOrder = { high: 0, medium: 1, low: 2 }
+                                            return priorityOrder[a.priority] - priorityOrder[b.priority]
+                                          })
+                                          .slice(0, 5)
+                                          .map((rec, idx) => (
+                                          <div key={idx} className="flex items-start justify-between gap-2 p-2 rounded-lg bg-muted/50">
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium line-clamp-1">{rec.title}</p>
+                                              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                                                <span>{rec.timeframe}</span>
+                                                <span>•</span>
+                                                <span className="line-clamp-1">{rec.impact}</span>
+                                              </p>
+                                            </div>
+                                            <Badge
+                                              variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'default' : 'secondary'}
+                                              className="text-[10px] flex-shrink-0"
+                                            >
+                                              {rec.priority}
+                                            </Badge>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {job.recommendations.length > 5 && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full text-xs"
+                                          onClick={() => {
+                                            setPreviewJob(job)
+                                            setPreviewTemplate(job.template_used || 'A')
+                                          }}
+                                        >
+                                          View all {job.recommendations.length} tips →
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </Card>
+                                )}
+                              </div>
+
+                              {/* Job Description Section */}
+                              {(job.job_description || job.job_url) && (
+                                <details className="group">
+                                  <summary className="cursor-pointer list-none">
+                                    <Card className="p-4 bg-background/80 hover:bg-background transition-colors">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <h4 className="text-sm font-semibold">Job Details</h4>
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            View original job description
+                                            {job.job_url && ' and posting link'}
+                                          </p>
+                                        </div>
+                                        <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform group-open:rotate-180" />
+                                      </div>
+                                    </Card>
+                                  </summary>
+                                  <Card className="mt-2 p-4 bg-background/80 border-t-0 rounded-t-none">
+                                    <div className="space-y-4">
+                                      {job.job_url && (
+                                        <div>
+                                          <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                                            Job Posting
+                                          </h5>
+                                          <a
+                                            href={job.job_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-primary hover:underline inline-flex items-center gap-1.5"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            {job.job_url}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {job.job_description && (
+                                        <div>
+                                          <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                                            Description
+                                          </h5>
+                                          <div className="text-sm text-muted-foreground whitespace-pre-wrap max-h-64 overflow-y-auto p-3 bg-muted/30 rounded-lg border">
+                                            {job.job_description}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Card>
+                                </details>
                               )}
-
-                              <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-1">Template</h4>
-                                  <p className="text-sm text-muted-foreground">Template {job.template_used || 'A'}</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-1">Created</h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    {new Date(job.created_at).toLocaleString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
-                                  </p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold mb-1">Status</h4>
-                                  <p className="text-sm text-muted-foreground capitalize">{job.generation_status}</p>
-                                </div>
-                              </div>
                             </div>
                           </td>
                         </tr>
