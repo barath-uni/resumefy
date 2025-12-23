@@ -59,7 +59,7 @@ const createStyles = (_layout: LayoutDecision) => {
     name: {
       fontSize: 26,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 3,
+      marginBottom: 12,
       color: '#000000',
       letterSpacing: 0.5,
     },
@@ -125,6 +125,13 @@ const createStyles = (_layout: LayoutDecision) => {
       color: '#000000',
     },
     skillsGrid: {
+      display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 5,
+      marginTop: 6,
+    },
+    skillsList: {
       display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',

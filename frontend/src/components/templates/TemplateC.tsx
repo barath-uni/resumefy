@@ -56,11 +56,11 @@ const createStyles = (_layout: LayoutDecision) => {
       fontSize: 10.5,
       lineHeight: 1.5,
       color: '#2d3748',
-      backgroundColor: '#fefae0', // cornsilk background
+      backgroundColor: '#ffffff',
     },
-    // Bold header with color bar and geometric elements
+    // Clean professional header
     header: {
-      backgroundColor: '#d4a373', // buff color
+      backgroundColor: '#4299e1',
       padding: 32,
       marginBottom: 0,
       position: 'relative',
@@ -71,18 +71,18 @@ const createStyles = (_layout: LayoutDecision) => {
       right: 0,
       width: 120,
       height: '100%',
-      backgroundColor: 'rgba(0,0,0,0.1)',
+      backgroundColor: 'rgba(0,0,0,0.05)',
     },
     name: {
-      fontSize: 34,
+      fontSize: 32,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 5,
+      marginBottom: 12,
       color: '#ffffff',
-      letterSpacing: 1.5,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
     },
     jobTitle: {
-      fontSize: 15,
+      fontSize: 14,
       color: '#ffffff',
       marginBottom: 12,
       opacity: 0.95,
@@ -107,11 +107,15 @@ const createStyles = (_layout: LayoutDecision) => {
       marginBottom: 22,
     },
     sectionHeader: {
-      backgroundColor: '#ccd5ae', // tea-green
-      padding: 10,
+      backgroundColor: '#f7fafc',
+      paddingTop: 10,
+      paddingBottom: 10,
+      paddingLeft: 10,
+      paddingRight: 10,
       marginBottom: 14,
-      borderRadius: 0,
-      borderLeft: '6px solid #d4a373',
+      borderLeftWidth: 4,
+      borderLeftStyle: 'solid',
+      borderLeftColor: '#4299e1',
       position: 'relative',
     },
     sectionTitle: {
@@ -126,7 +130,9 @@ const createStyles = (_layout: LayoutDecision) => {
     timelineContainer: {
       position: 'relative',
       paddingLeft: 28,
-      borderLeft: '3px solid #d4a373',
+      borderLeftWidth: 3,
+      borderLeftStyle: 'solid',
+      borderLeftColor: '#d4a373',
       marginLeft: 8,
     },
     timelineMarker: {
@@ -137,7 +143,9 @@ const createStyles = (_layout: LayoutDecision) => {
       height: 12,
       borderRadius: 6,
       backgroundColor: '#d4a373',
-      border: '3px solid #fefae0',
+      borderWidth: 3,
+      borderStyle: 'solid',
+      borderColor: '#fefae0',
     },
     // Summary section
     summary: {
@@ -210,7 +218,9 @@ const createStyles = (_layout: LayoutDecision) => {
       fontSize: 9.5,
       color: '#2d3748',
       fontFamily: 'Helvetica-Bold',
-      border: '2px solid #d4a373',
+      borderWidth: 2,
+      borderStyle: 'solid',
+      borderColor: '#d4a373',
     },
     // Education entries
     educationEntry: {

@@ -61,42 +61,47 @@ const createStyles = (_layout: LayoutDecision) => {
     // Sidebar (left column) - visually distinct
     sidebar: {
       width: '30%',
-      backgroundColor: '#F5F7FA',
+      backgroundColor: '#F0F4F8',
       paddingLeft: 20,
       paddingRight: 20,
-      borderRight: '2px solid #E2E8F0',
+      borderRight: '2px solid #4299e1',
     },
     sidebarSection: {
       marginBottom: 20,
       paddingBottom: 16,
-      borderBottom: '1px solid rgba(255,255,255,0.15)',
+      borderBottom: '1px solid #CBD5E0',
     },
     sidebarTitle: {
       fontSize: 11,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 10,
-      color: '#ffffff',
+      color: '#1A202C',
       textTransform: 'uppercase',
       letterSpacing: 1,
     },
     contactItem: {
       fontSize: 8.5,
       marginBottom: 6,
-      color: '#e2e8f0',
+      color: '#2D3748',
       lineHeight: 1.5,
     },
     skillItemContainer: {
       marginBottom: 8,
     },
+    skillItem: {
+      fontSize: 9,
+      color: '#2D3748',
+      flex: 1,
+    },
     skillName: {
       fontSize: 9,
       marginBottom: 3,
-      color: '#e2e8f0',
+      color: '#1A202C',
       fontFamily: 'Helvetica-Bold',
     },
     skillBarBackground: {
       height: 4,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+      backgroundColor: '#CBD5E0',
       borderRadius: 2,
       overflow: 'hidden',
     },
@@ -112,16 +117,16 @@ const createStyles = (_layout: LayoutDecision) => {
       fontSize: 9.5,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
-      color: '#ffffff',
+      color: '#1A202C',
     },
     school: {
       fontSize: 8.5,
       marginBottom: 2,
-      color: '#cbd5e0',
+      color: '#4A5568',
     },
     year: {
       fontSize: 8,
-      color: '#a0aec0',
+      color: '#718096',
     },
     // Main content (right column)
     main: {
@@ -206,11 +211,11 @@ const createStyles = (_layout: LayoutDecision) => {
       fontSize: 9.5,
       fontFamily: 'Helvetica-Bold',
       marginBottom: 2,
-      color: '#ffffff',
+      color: '#1A202C',
     },
     certIssuer: {
       fontSize: 8.5,
-      color: '#cbd5e0',
+      color: '#4A5568',
     },
     languageItem: {
       flexDirection: 'row',
