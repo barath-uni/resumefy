@@ -171,14 +171,14 @@ const createStyles = (_layout: LayoutDecision) => {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 4,
-      backgroundColor: '#e9edc9',
+      backgroundColor: '#ffffff',
       padding: 4,
       borderRadius: 3,
     },
     company: {
       fontSize: 10.5,
       fontFamily: 'Helvetica-Bold',
-      color: '#d4a373', // buff accent
+      color: '#1a202c',
       marginRight: 10,
     },
     dates: {
@@ -211,16 +211,16 @@ const createStyles = (_layout: LayoutDecision) => {
       paddingVertical: 6,
     },
     skillTag: {
-      backgroundColor: '#e9edc9', // beige
+      backgroundColor: '#ffffff',
       paddingHorizontal: 14,
       paddingVertical: 6,
       borderRadius: 16,
       fontSize: 9.5,
-      color: '#2d3748',
+      color: '#1a202c',
       fontFamily: 'Helvetica-Bold',
-      borderWidth: 2,
+      borderWidth: 1.5,
       borderStyle: 'solid',
-      borderColor: '#d4a373',
+      borderColor: '#cbd5e0',
     },
     // Education entries
     educationEntry: {
