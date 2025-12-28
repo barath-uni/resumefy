@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Card } from '../ui/card'
 import { Button } from '../ui/button'
-import { CheckCircle, Circle, Target } from 'lucide-react'
+import { CheckCircle, Circle } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface SkillsChecklistProps {
   jobTitle: string
@@ -24,97 +24,115 @@ export function SkillsChecklist({ jobTitle, skills }: SkillsChecklistProps) {
   const percentage = Math.round((checkedSkills.size / skills.length) * 100)
 
   const getProgressColor = () => {
-    if (percentage >= 70) return 'bg-green-500'
-    if (percentage >= 40) return 'bg-yellow-500'
-    return 'bg-red-500'
+    if (percentage >= 70) return 'bg-gradient-to-r from-emerald-500 to-green-600'
+    if (percentage >= 40) return 'bg-gradient-to-r from-blue-500 to-indigo-600'
+    return 'bg-gradient-to-r from-gray-400 to-gray-500'
   }
 
   const getFeedback = () => {
     if (percentage >= 70) {
-      return 'Excellent! You have most of the key skills employers are looking for.'
+      return '🎉 Excellent! You have most of the key skills employers are looking for.'
     }
     if (percentage >= 40) {
-      return 'Good start! Consider highlighting these skills more prominently in your resume.'
+      return '💪 Good start! Consider highlighting these skills more prominently.'
     }
-    return 'Focus on developing these skills to become more competitive for this role.'
+    return '📚 Focus on developing these skills to become more competitive.'
   }
 
   return (
-    <Card className="p-6 my-8 border-2 border-[#ff9f1c]/20 bg-gradient-to-br from-white to-[#ffbf69]/10">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Target className="w-5 h-5 text-[#ff9f1c]" />
-          <h3 className="text-xl font-heading font-bold text-gray-900">
-            Top Skills for {jobTitle}
-          </h3>
-        </div>
-        <p className="text-sm text-gray-600 mb-4">
-          Check off the skills you have to see how you match up
-        </p>
+    <div className="relative group my-12">
+      {/* Subtle animated border */}
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-emerald-600 to-blue-600 rounded-3xl blur opacity-20 group-hover:opacity-30 transition duration-500"></div>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Your Match</span>
-            <span className="font-bold text-gray-900">
-              {checkedSkills.size} / {skills.length} skills
-            </span>
+      <div className="relative bg-white rounded-3xl p-8 border-2 border-gray-100 shadow-sm">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">
+              🎯
+            </div>
+            <div>
+              <h3 className="text-2xl font-heading font-bold text-gray-900">
+                Top Skills for {jobTitle}
+              </h3>
+              <p className="text-sm text-gray-600">
+                Check off the skills you have
+              </p>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`${getProgressColor()} h-3 rounded-full transition-all duration-300`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-600 italic">{getFeedback()}</p>
-        </div>
-      </div>
 
-      {/* Skills Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        {skills.map((skill) => {
-          const isChecked = checkedSkills.has(skill)
-          return (
-            <button
-              key={skill}
-              onClick={() => toggleSkill(skill)}
-              className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                isChecked
-                  ? 'border-[#2ec4b6] bg-[#cbf3f0]/30'
-                  : 'border-gray-200 hover:border-[#2ec4b6]/50'
-              }`}
-            >
-              {isChecked ? (
-                <CheckCircle className="w-5 h-5 text-[#2ec4b6] flex-shrink-0" />
-              ) : (
-                <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              )}
-              <span
-                className={`text-sm font-medium ${
-                  isChecked ? 'text-gray-900' : 'text-gray-600'
+          {/* Progress Bar */}
+          <div className="space-y-3 bg-gray-50 rounded-xl p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700">Your Match</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+                {percentage}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${percentage}%` }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className={`${getProgressColor()} h-4 rounded-full shadow-sm`}
+              />
+            </div>
+            <p className="text-sm text-gray-700 font-medium">{getFeedback()}</p>
+          </div>
+        </div>
+
+        {/* Skills Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {skills.map((skill, index) => {
+            const isChecked = checkedSkills.has(skill)
+            return (
+              <motion.button
+                key={skill}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => toggleSkill(skill)}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                  isChecked
+                    ? 'border-emerald-500 bg-gradient-to-r from-emerald-50 to-blue-50 shadow-sm'
+                    : 'border-gray-200 hover:border-emerald-300 hover:shadow-sm'
                 }`}
               >
-                {skill}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* CTA */}
-      {checkedSkills.size > 0 && (
-        <div className="mt-6 p-4 bg-gradient-to-r from-[#cbf3f0] to-[#ffbf69]/20 rounded-lg">
-          <p className="text-sm text-gray-700 mb-3">
-            Ready to tailor your resume to highlight these {checkedSkills.size} skills?
-          </p>
-          <Button
-            onClick={() => window.location.href = '/'}
-            className="w-full bg-[#ff9f1c] hover:bg-[#ffbf69] text-white"
-          >
-            Create Tailored Resume
-          </Button>
+                {isChecked ? (
+                  <CheckCircle className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <Circle className="w-6 h-6 text-gray-300 flex-shrink-0" />
+                )}
+                <span
+                  className={`text-sm font-semibold ${
+                    isChecked ? 'text-gray-900' : 'text-gray-600'
+                  }`}
+                >
+                  {skill}
+                </span>
+              </motion.button>
+            )
+          })}
         </div>
-      )}
-    </Card>
+
+        {/* CTA */}
+        {checkedSkills.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 p-6 bg-gradient-to-br from-blue-50 via-emerald-50 to-blue-50 rounded-2xl border border-emerald-200"
+          >
+            <p className="text-base text-gray-900 mb-4 font-medium">
+              ✨ Ready to tailor your resume to highlight these {checkedSkills.size} skills?
+            </p>
+            <Button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-gradient-to-r from-blue-600 via-emerald-600 to-blue-600 hover:opacity-90 text-white border-0 shadow-sm py-6"
+            >
+              Create Tailored Resume →
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    </div>
   )
 }
