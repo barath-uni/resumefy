@@ -44,6 +44,9 @@ export const trackEvent = (action: string, parameters?: Record<string, any>) => 
 
 // Specific conversion events from pre-MVP plan
 export const analytics = {
+  // Generic event tracking
+  trackEvent,
+
   // Landing page visits
   trackLandingPageView: () => {
     trackEvent('page_view', {

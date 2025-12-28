@@ -13,6 +13,8 @@ import Landing from "./pages/Landing"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
 import Support from "./pages/Support"
+import BlogIndex from "./pages/BlogIndex"
+import BlogPost from "./pages/BlogPost"
 import AppLayout from "./components/layout/AppLayout"
 import { analytics, initGA } from "./lib/analytics"
 import { initClarity } from "./lib/clarity"
@@ -153,6 +155,10 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/support" element={<Support />} />
+
+        {/* Blog Pages */}
+        <Route path="/blog" element={<BlogIndex />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
       </Routes>
 
       {/* Upload Modal - Show on Landing page, handle auth inside modal */}

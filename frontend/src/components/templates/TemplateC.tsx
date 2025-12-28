@@ -328,7 +328,7 @@ const TemplateC: React.FC<TemplateCProps> = ({ blocks, layout }) => {
     if (isArrayContent(content)) {
       return (
         <>
-          {content.map((entry: any, idx: number) => renderEntry(entry))}
+          {content.map((entry: any) => renderEntry(entry))}
         </>
       )
     }

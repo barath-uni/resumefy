@@ -226,7 +226,6 @@ const TemplateD: React.FC<TemplateDProps> = ({ blocks, layout }) => {
   })
 
   // Separate blocks by section
-  const headerBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'header')
   const mainBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'main')
 
   // Find contact block for header

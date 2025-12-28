@@ -18,7 +18,6 @@ import {
 import { useToast } from '../hooks/use-toast'
 import { templates } from '../lib/templateData'
 import { usePDFExport } from '../hooks/usePDFExport'
-import { completePDFGeneration } from '../lib/pdfUploadService'
 
 interface BulkJob {
   id: string
