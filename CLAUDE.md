@@ -155,15 +155,19 @@ can_generate_pdf(p_user_id UUID) → JSONB {allowed, reason, tier}
 
 ## Subscription Tiers & Pricing
 
-| Tier | Price | Resumes | Jobs/Resume | PDF Generation |
-|------|-------|---------|-------------|----------------|
-| **Free** | $0 | 1 | 5 | ❌ NO (paywall) |
-| **Pro** | $8.99/mo | 3 | 25 | ✅ Unlimited |
-| **Max** | $17.99/mo | 10 | 100 | ✅ Unlimited |
+| Tier | Price | Tailorings (Total) | Core Features | Premium Features |
+|------|-------|-------------------|---------------|------------------|
+| **Free** | $0 | 5 | All core features | ❌ None |
+| **Pro** | ~~$8.99~~ $4.99/mo (44% off) | 30 | All core features | ✅ Bulk generation, Priority 48h support, Early templates |
+| **Max** | ~~$14.99~~ $8.99/mo (40% off) | 100 | All core features | ✅ All Pro + Priority 24h support, Analytics dashboard |
 
-**Free Tier Strategy**: Users see AI insights but cannot download PDFs (conversion funnel).
+**Core Features (ALL tiers)**: AI-powered tailoring, role-fit score (0-100%), ATS analysis, missing skills detection, recommendations, all 4 PDF templates, PDF downloads, multilingual support (50+ languages).
 
-**Economics**: Free = $0.05 cost (loss leader), Pro = 92% margin, Max = 44% margin.
+**Premium Features**: Pro/Max get bulk template generation (all 4 at once), priority email support, early access to new templates. Max adds analytics dashboard (coming soon).
+
+**Pricing Model**: Credit-based system. Free tier gets 5 tailorings total. Pro/Max are monthly subscriptions (credits do NOT refill monthly yet - future feature).
+
+**Economics**: Free = $0.10 cost (loss leader), Pro = 90% margin, Max = 82% margin.
 
 ---
 

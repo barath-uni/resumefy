@@ -229,8 +229,12 @@ export default function BillingPage() {
             </div>
 
             <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">$8.99</span>
-              <span className="text-muted-foreground">/month</span>
+              <div>
+                <span className="text-4xl font-bold text-foreground line-through text-muted-foreground mr-2">$8.99</span>
+                <span className="text-4xl font-bold text-foreground">$4.99</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+              <div className="text-xs text-blue-600 font-medium mt-1">44% off - Launch pricing!</div>
             </div>
 
             <Separator className="mb-6" />
@@ -238,27 +242,27 @@ export default function BillingPage() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Upload up to <strong>3 resumes</strong></span>
+                <span><strong>30 tailorings</strong></span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span><strong>25 job descriptions</strong> per resume (75 total)</span>
+                <span>All Free features included</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span><strong>Unlimited PDF generation</strong></span>
+                <span><strong>Bulk template generation</strong> (all 4 at once)</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Bulk generate up to <strong>25 resumes</strong> at once</span>
+                <span>All 4 professional templates</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>All 3 professional templates</span>
+                <span>Priority email support (48h response)</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>AI-powered fit score analysis</span>
+                <span>Early access to new templates</span>
               </li>
             </ul>
 
@@ -301,8 +305,12 @@ export default function BillingPage() {
             </div>
 
             <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">$17.99</span>
-              <span className="text-muted-foreground">/month</span>
+              <div>
+                <span className="text-4xl font-bold text-foreground line-through text-muted-foreground mr-2">$14.99</span>
+                <span className="text-4xl font-bold text-foreground">$8.99</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+              <div className="text-xs text-purple-600 font-medium mt-1">40% off - Best for power users!</div>
             </div>
 
             <Separator className="mb-6" />
@@ -310,31 +318,27 @@ export default function BillingPage() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Upload up to <strong>10 resumes</strong></span>
+                <span><strong>100 tailorings</strong></span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span><strong>100 job descriptions</strong> per resume (1,000 total)</span>
+                <span>All Pro features included</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span><strong>Unlimited PDF generation</strong></span>
+                <span>All 4 professional templates</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Bulk generate up to <strong>100 resumes</strong> at once</span>
+                <span>Priority email support (24h response)</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>All premium templates + new releases</span>
+                <span>Analytics dashboard (coming soon)</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Priority support (24h response)</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Advanced analytics dashboard</span>
+                <span>Priority feature requests</span>
               </li>
             </ul>
 
