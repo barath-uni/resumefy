@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState, Fragment } from 'react'
 import { supabase } from '../lib/supabase'
-import { Loader2, X, Trash2, ChevronDown, ChevronRight, ExternalLink, Sparkles } from 'lucide-react'
+import { Loader2, X, Trash2, ChevronDown, ChevronRight, ExternalLink, Sparkles, Edit } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -18,7 +18,6 @@ import {
 import { useToast } from '../hooks/use-toast'
 import { templates } from '../lib/templateData'
 import { usePDFExport } from '../hooks/usePDFExport'
-import { completePDFGeneration } from '../lib/pdfUploadService'
 
 interface BulkJob {
   id: string
@@ -578,6 +577,14 @@ export default function GeneratedResumesPage() {
                                   <span className="text-[10px] text-white font-medium">View</span>
                                 </div>
                               </button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate(`/app/edit-resume/${job.id}`)}
+                                className="text-primary hover:text-primary hover:bg-primary/10"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"

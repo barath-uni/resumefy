@@ -348,14 +348,14 @@ export default function BillingDetailsPage() {
                     <SelectItem value="pro">
                       <div className="flex items-center gap-2">
                         <Zap className="w-4 h-4" />
-                        <span>Pro - $8.99/mo</span>
+                        <span>Pro - $4.99/mo (44% off)</span>
                       </div>
                     </SelectItem>
                   )}
                   <SelectItem value="max">
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4" />
-                      <span>Max - $17.99/mo</span>
+                      <span>Max - $8.99/mo (40% off)</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -408,15 +408,15 @@ export default function BillingDetailsPage() {
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>1 Resume</span>
+                  <span>5 tailorings total</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>5 Job Descriptions</span>
+                  <span>All core features (AI tailoring, fit scores, ATS analysis)</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground line-through">
-                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                  <span>PDF Generation</span>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>All 4 professional templates</span>
                 </div>
               </>
             )}
@@ -424,19 +424,23 @@ export default function BillingDetailsPage() {
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>3 Resumes</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>25 Job Descriptions per Resume</span>
+                  <span>30 tailorings</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Unlimited PDF Generation</span>
+                  <span>All Free features included</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>All Premium Templates</span>
+                  <span>Bulk template generation (all 4 at once)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Priority email support (48h response)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Early access to new templates</span>
                 </div>
               </>
             )}
@@ -444,19 +448,23 @@ export default function BillingDetailsPage() {
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span>10 Resumes</span>
+                  <span>100 tailorings</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>All Pro features included</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Priority email support (24h response)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span>100 Job Descriptions per Resume</span>
+                  <span>Analytics dashboard (coming soon)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Unlimited PDF Generation</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Priority Support (24h response)</span>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span>Priority feature requests</span>
                 </div>
               </>
             )}

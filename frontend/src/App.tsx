@@ -6,6 +6,7 @@ import MyResumesPage from "./pages/MyResumesPage"
 import TailorResumePage from "./pages/TailorResumePage"
 import TailoringPageV2 from "./pages/TailoringPageV2"
 import GeneratedResumesPage from "./pages/GeneratedResumesPage"
+import EditResumePage from "./pages/EditResumePage"
 import BillingPage from "./pages/BillingPage"
 import BillingDetailsPage from "./pages/BillingDetailsPage"
 import PaymentSuccessPage from "./pages/PaymentSuccessPage"
@@ -131,6 +132,10 @@ function App() {
               <GeneratedResumesPage />
             </AppLayout>
           }
+        />
+        <Route
+          path="/app/edit-resume/:jobId"
+          element={<EditResumePage />}
         />
         <Route
           path="/app/billing"

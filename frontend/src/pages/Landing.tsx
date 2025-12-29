@@ -586,7 +586,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Free Trial */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}
@@ -595,10 +595,10 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
               viewport={{ once: true }}
               className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 hover:shadow-lg transition-all force-dark-text"
             >
-              <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2 force-dark-text">Free Trial</h3>
+              <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2 force-dark-text">Free</h3>
               <div className="mb-6">
                 <div className="text-4xl font-bold text-gray-900 force-dark-text">$0</div>
-                <div className="text-gray-600 text-sm mt-1 force-gray-text">No credit card required</div>
+                <div className="text-gray-600 text-sm mt-1 force-gray-text">5 tailorings total</div>
               </div>
 
               <ul className="space-y-4 mb-8">
@@ -606,31 +606,31 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                   <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                   </div>
-                  <span className="text-gray-700 force-gray-text">20 resume optimizations</span>
+                  <span className="text-gray-700 force-gray-text">AI-powered tailoring</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                   </div>
-                  <span className="text-gray-700 force-gray-text">Role-fit scores</span>
+                  <span className="text-gray-700 force-gray-text">Role-fit score (0-100%)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                   </div>
-                  <span className="text-gray-700 force-gray-text">ATS analysis</span>
+                  <span className="text-gray-700 force-gray-text">ATS-friendly optimization</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                   </div>
-                  <span className="text-gray-700 force-gray-text">PDF & DOCX downloads</span>
+                  <span className="text-gray-700 force-gray-text">All 4 professional templates</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
                   </div>
-                  <span className="text-gray-700 force-gray-text">No credit card</span>
+                  <span className="text-gray-700 force-gray-text">No credit card required</span>
                 </li>
               </ul>
 
@@ -661,12 +661,12 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
               <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2 force-dark-text">Pro</h3>
               <div className="mb-6">
                 <div className="text-4xl font-bold text-gray-900 force-dark-text">
-                  <span className="line-through text-gray-400 text-2xl">$9.99</span>
+                  <span className="line-through text-gray-400 text-2xl">$8.99</span>
                   <span className="ml-2">$4.99</span>
                   <span className="text-lg text-gray-600 font-normal">/month</span>
                 </div>
-                <div className="text-emerald-600 text-sm mt-1 font-medium force-dark-text">Founder pricing - Help us improve the product!</div>
-                <div className="text-gray-700 text-xs mt-1 force-gray-text">Cancel anytime</div>
+                <div className="text-emerald-600 text-sm mt-1 font-medium force-dark-text">44% off - Launch pricing!</div>
+                <div className="text-gray-700 text-xs mt-1 force-gray-text">30 tailorings • Cancel anytime</div>
               </div>
 
               <ul className="space-y-4 mb-8">
@@ -674,31 +674,31 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                   <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>
-                  <span className="text-gray-900 font-medium force-dark-text">Unlimited quick optimizations</span>
+                  <span className="text-gray-900 font-medium force-dark-text">30 tailorings</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>
-                  <span className="text-gray-900 font-medium force-dark-text">Priority support</span>
+                  <span className="text-gray-900 font-medium force-dark-text">All Free features included</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>
-                  <span className="text-gray-900 font-medium force-dark-text">Advanced analytics</span>
+                  <span className="text-gray-900 font-medium force-dark-text">Bulk template generation</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>
-                  <span className="text-gray-900 font-medium force-dark-text">Custom templates</span>
+                  <span className="text-gray-900 font-medium force-dark-text">Priority email support (48h)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>
-                  <span className="text-gray-900 font-medium force-dark-text">7-day money-back guarantee</span>
+                  <span className="text-gray-900 font-medium force-dark-text">Early access to new templates</span>
                 </li>
               </ul>
 
@@ -709,7 +709,74 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 }}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-0"
               >
-                Start Free Trial
+                Upgrade to Pro
+              </Button>
+            </motion.div>
+
+            {/* Max Plan */}
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 shadow-lg border-2 border-purple-200 hover:shadow-xl transition-all relative force-dark-text"
+            >
+              <div className="absolute -top-4 right-8 bg-purple-600 text-white text-sm font-semibold px-4 py-1 rounded-full">
+                Best Value
+              </div>
+
+              <h3 className="text-2xl font-heading font-bold text-gray-900 mb-2 force-dark-text">Max</h3>
+              <div className="mb-6">
+                <div className="text-4xl font-bold text-gray-900 force-dark-text">
+                  <span className="line-through text-gray-400 text-2xl">$14.99</span>
+                  <span className="ml-2">$8.99</span>
+                  <span className="text-lg text-gray-600 font-normal">/month</span>
+                </div>
+                <div className="text-purple-600 text-sm mt-1 font-medium force-dark-text">40% off - Best for power users!</div>
+                <div className="text-gray-700 text-xs mt-1 force-gray-text">100 tailorings • Cancel anytime</div>
+              </div>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <span className="text-gray-900 font-medium force-dark-text">100 tailorings</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <span className="text-gray-900 font-medium force-dark-text">All Pro features included</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <span className="text-gray-900 font-medium force-dark-text">Priority email support (24h)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <span className="text-gray-900 font-medium force-dark-text">Analytics dashboard (coming soon)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <span className="text-gray-900 font-medium force-dark-text">Priority feature requests</span>
+                </li>
+              </ul>
+
+              <Button
+                onClick={() => {
+                  analytics.trackUploadAttempt()
+                  onOpenUploadModal()
+                }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white border-0"
+              >
+                Upgrade to Max
               </Button>
             </motion.div>
           </div>
