@@ -49,7 +49,6 @@ export async function extractResumeText(
   fileUrl: string
 ): Promise<ExtractResult> {
   try {
-    console.log('📤 [extractResumeText] Calling parse-resume function...', { resumeId, fileUrl })
 
     const { data, error } = await supabase.functions.invoke('parse-resume', {
       body: {
@@ -66,7 +65,6 @@ export async function extractResumeText(
       }
     }
 
-    console.log('✅ [extractResumeText] Success:', data)
     return data as ExtractResult
   } catch (error: any) {
     console.error('❌ [extractResumeText] Unexpected error:', error)

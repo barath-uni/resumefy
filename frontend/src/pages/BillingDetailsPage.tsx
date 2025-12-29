@@ -114,7 +114,6 @@ export default function BillingDetailsPage() {
       })
 
       if (error || !data?.success) {
-        console.error('❌ Cancel error:', error || data?.error)
         toast({
           title: "Failed to cancel subscription",
           description: error?.message || data?.error || 'Unknown error',
@@ -122,8 +121,6 @@ export default function BillingDetailsPage() {
         })
         return
       }
-
-      console.log('✅ Subscription cancelled successfully')
 
       toast({
         title: "Subscription cancelled",
@@ -134,7 +131,6 @@ export default function BillingDetailsPage() {
       window.location.reload()
 
     } catch (err) {
-      console.error('❌ Unexpected error:', err)
       toast({
         title: "Unexpected error",
         description: (err as Error).message,
@@ -152,8 +148,6 @@ export default function BillingDetailsPage() {
     setIsSwitchingPlan(true)
 
     try {
-      console.log('🔄 Switching plan to:', selectedNewTier)
-
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -169,7 +163,6 @@ export default function BillingDetailsPage() {
       })
 
       if (error) {
-        console.error('❌ Error switching plan:', error)
         throw error
       }
 
@@ -177,13 +170,10 @@ export default function BillingDetailsPage() {
         throw new Error('No checkout URL returned')
       }
 
-      console.log('✅ Checkout session created, redirecting to Stripe...')
-
       // Redirect to Stripe Checkout
       window.location.href = data.url
 
     } catch (error: any) {
-      console.error('❌ Switch plan error:', error)
       toast({
         title: "Failed to switch plan",
         description: error.message || 'Failed to switch plan',

@@ -30,17 +30,13 @@ export default function Dashboard() {
   useEffect(() => {
     const handleAuthFlow = async () => {
       try {
-        console.log('🔐 [Dashboard] Starting auth flow...')
 
         // Check URL for error parameters (expired links, etc.)
         const urlParams = new URLSearchParams(window.location.hash.substring(1))
         const error = urlParams.get('error')
         const errorDescription = urlParams.get('error_description')
 
-        console.log('🔍 [Dashboard] URL params:', { error, errorDescription, hash: window.location.hash })
-
         if (error === 'access_denied' && errorDescription?.includes('expired')) {
-          console.log('❌ [Dashboard] Link expired')
           setError('Your email link has expired. Please upload your resume again to get a new link.')
           setLoading(false)
           return
@@ -48,7 +44,6 @@ export default function Dashboard() {
 
         // Handle auth state changes from URL (signup confirmation)
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('🔄 [Dashboard] Auth state changed:', event, session?.user?.email)
 
           if (event === 'SIGNED_IN' && session?.user) {
             setUser(session.user)
@@ -64,8 +59,6 @@ export default function Dashboard() {
         // Also check current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        console.log('🔑 [Dashboard] Current session:', session?.user?.email)
-
         if (sessionError) {
           console.error('❌ [Dashboard] Session error:', sessionError)
           throw sessionError
@@ -77,9 +70,7 @@ export default function Dashboard() {
 
           // Track dashboard reached - KEY METRIC!
           analytics.trackDashboardReached()
-          console.log('✅ [Dashboard] Auth complete!')
         } else {
-          console.log('⚠️ [Dashboard] No active session')
           setError('Please check your email and click the confirmation link to access your dashboard.')
         }
 
@@ -95,11 +86,8 @@ export default function Dashboard() {
     }
 
     const handleUserSession = async (user: any) => {
-      console.log('👤 [Dashboard] Handling user session...', user.email)
-
       // Get the email capture data using the custom token from user metadata
       const customToken = user.user_metadata?.custom_token
-      console.log('🔑 [Dashboard] Custom token:', customToken)
 
       if (customToken) {
         // Update our custom magic link tracking
@@ -108,8 +96,6 @@ export default function Dashboard() {
           .select('*, email_captures(*)')
           .eq('token', customToken)
           .single()
-
-        console.log('🔗 [Dashboard] Magic link data:', magicLink)
 
         if (!linkError && magicLink) {
           // Mark as clicked
@@ -128,11 +114,8 @@ export default function Dashboard() {
 
           setEmailData(magicLink.email_captures)
 
-          console.log('📄 [Dashboard] Email capture data:', magicLink.email_captures)
-
           // Load uploaded resume if it exists
           if (magicLink.email_captures?.uploaded_file_url) {
-            console.log('📎 [Dashboard] Found uploaded file:', magicLink.email_captures.uploaded_file_url)
             setCurrentResume({
               id: magicLink.email_captures.id,
               file_name: magicLink.email_captures.uploaded_file_name,
@@ -147,7 +130,6 @@ export default function Dashboard() {
         }
       } else {
         // Fallback: Try to fetch email_captures by user email
-        console.log('⚠️ [Dashboard] No custom token, fetching by email...')
         const { data: emailCaptures, error: captureError } = await supabase
           .from('email_captures')
           .select('*')
@@ -156,12 +138,10 @@ export default function Dashboard() {
           .limit(1)
 
         if (!captureError && emailCaptures && emailCaptures.length > 0) {
-          console.log('📧 [Dashboard] Found email capture:', emailCaptures[0])
           setEmailData(emailCaptures[0])
 
           // Load uploaded resume if it exists
           if (emailCaptures[0].uploaded_file_url) {
-            console.log('📎 [Dashboard] Found uploaded file:', emailCaptures[0].uploaded_file_url)
             setCurrentResume({
               id: emailCaptures[0].id,
               file_name: emailCaptures[0].uploaded_file_name,
@@ -241,12 +221,10 @@ export default function Dashboard() {
 
       // Phase 3A: Automatically trigger text extraction
       setIsExtracting(true)
-      console.log('🚀 [Dashboard] Triggering text extraction for:', resumeId)
 
       const result = await extractResumeText(resumeId, fileUrl)
 
       if (result.success && result.text) {
-        console.log('✅ [Dashboard] Text extracted successfully')
         setExtractedText(result.text)
         setExtractMetadata({ pages: result.pages, wordCount: result.wordCount })
         setIsExtracting(false)

@@ -12,7 +12,6 @@ export interface UploadResult {
  */
 export async function uploadResume(file: File, userId: string): Promise<UploadResult> {
   try {
-    console.log('🚀 Starting upload...', { fileName: file.name, fileSize: file.size, fileType: file.type, userId })
 
     // Validate file type
     const allowedTypes = [
@@ -44,8 +43,6 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
     const fileExt = file.name.split('.').pop()
     const fileName = `${userId}/${timestamp}.${fileExt}`
 
-    console.log('📤 Uploading to storage...', { fileName })
-
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('resume')
@@ -53,8 +50,6 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
         cacheControl: '3600',
         upsert: false
       })
-
-    console.log('📤 Upload response:', { uploadData, uploadError })
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
@@ -81,9 +76,6 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
 
     const signedUrl = urlData.signedUrl
 
-    console.log('🔗 Signed URL created:', signedUrl)
-    console.log('💾 Creating database record...')
-
     // Create database record
     const { data: resumeData, error: dbError } = await supabase
       .from('resumes')
@@ -97,8 +89,6 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
       .select()
       .single()
 
-    console.log('💾 Database response:', { resumeData, dbError })
-
     if (dbError) {
       console.error('❌ Database error:', dbError)
       // Clean up uploaded file
@@ -108,8 +98,6 @@ export async function uploadResume(file: File, userId: string): Promise<UploadRe
         error: 'Failed to save resume. Please try again.'
       }
     }
-
-    console.log('✅ Upload complete!', { resumeId: resumeData.id, fileUrl: signedUrl })
 
     return {
       success: true,

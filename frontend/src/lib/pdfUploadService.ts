@@ -31,18 +31,10 @@ export async function uploadPDFToStorage(params: UploadPDFParams): Promise<Uploa
   const { blob, jobId, userId, templateId } = params
 
   try {
-    console.log('[pdfUploadService] Starting PDF upload:', {
-      jobId,
-      userId,
-      templateId,
-      blobSize: blob.size
-    })
 
     // Create file path
     const fileName = `resume-${templateId.toLowerCase()}-${Date.now()}.pdf`
     const filePath = `${userId}/${jobId}/${fileName}`
-
-    console.log('[pdfUploadService] Uploading to path:', filePath)
 
     // Upload to Supabase storage
     const { data, error } = await supabase.storage
@@ -51,7 +43,6 @@ export async function uploadPDFToStorage(params: UploadPDFParams): Promise<Uploa
         contentType: 'application/pdf',
         upsert: true, // Replace if exists
       })
-
     if (error) {
       console.error('[pdfUploadService] Upload error:', error)
       return {
@@ -59,9 +50,9 @@ export async function uploadPDFToStorage(params: UploadPDFParams): Promise<Uploa
         error: error.message
       }
     }
-
-    console.log('[pdfUploadService] Upload successful:', data)
-
+    if (data){
+      console.log('All good', data);
+    }
     // Get signed URL (valid for 1 year)
     const { data: urlData, error: urlError } = await supabase.storage
       .from('resume')
@@ -76,8 +67,6 @@ export async function uploadPDFToStorage(params: UploadPDFParams): Promise<Uploa
     }
 
     const pdfUrl = urlData.signedUrl
-
-    console.log('[pdfUploadService] Signed URL generated:', pdfUrl)
 
     return {
       success: true,
@@ -106,10 +95,6 @@ export async function updateJobWithPDF(params: {
   const { jobId, pdfUrl, templateId } = params
 
   try {
-    console.log('[pdfUploadService] Updating job record:', {
-      jobId,
-      templateId
-    })
 
     const { error } = await supabase
       .from('jobs')
@@ -124,7 +109,6 @@ export async function updateJobWithPDF(params: {
       return false
     }
 
-    console.log('[pdfUploadService] Job record updated successfully')
     return true
 
   } catch (err) {
@@ -139,7 +123,6 @@ export async function updateJobWithPDF(params: {
  * 2. Update job record with URL
  */
 export async function completePDFGeneration(params: UploadPDFParams): Promise<UploadPDFResult> {
-  console.log('[pdfUploadService] Starting complete PDF generation flow')
 
   // Step 1: Upload to storage
   const uploadResult = await uploadPDFToStorage(params)
@@ -162,8 +145,6 @@ export async function completePDFGeneration(params: UploadPDFParams): Promise<Up
     }
   }
 
-  console.log('[pdfUploadService] Complete PDF generation flow successful')
-
   return {
     success: true,
     pdfUrl: uploadResult.pdfUrl
@@ -183,8 +164,6 @@ export async function deletePDF(params: {
     const fileName = `resume-${templateId.toLowerCase()}.pdf`
     const filePath = `${userId}/${jobId}/${fileName}`
 
-    console.log('[pdfUploadService] Deleting PDF:', filePath)
-
     const { error } = await supabase.storage
       .from('resume')
       .remove([filePath])
@@ -194,7 +173,6 @@ export async function deletePDF(params: {
       return false
     }
 
-    console.log('[pdfUploadService] PDF deleted successfully')
     return true
 
   } catch (err) {

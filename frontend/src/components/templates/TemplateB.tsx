@@ -237,12 +237,6 @@ const createStyles = (_layout: LayoutDecision) => {
 const TemplateB: React.FC<TemplateBProps> = ({ blocks, layout }) => {
   const styles = createStyles(layout)
 
-  // DEBUG: Log ALL blocks to see structure
-  console.log('🎨 [Template B] Rendering with blocks:', blocks.length)
-  console.log('🎨 [Template B] First 3 blocks:', blocks.slice(0, 3))
-  console.log('🎨 [Template B] Education blocks:', blocks.filter(b => b.category === 'education'))
-  console.log('🎨 [Template B] Certification blocks:', blocks.filter(b => b.category === 'certifications'))
-
   // Sort blocks by placement order
   const sortedBlocks = [...blocks].sort((a, b) => {
     const orderA = layout.placement[a.id]?.order ?? 999
@@ -253,9 +247,6 @@ const TemplateB: React.FC<TemplateBProps> = ({ blocks, layout }) => {
   // Separate blocks by section
   const sidebarBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'sidebar')
   const mainBlocks = sortedBlocks.filter(b => layout.placement[b.id]?.section === 'main')
-
-  console.log('🎨 [Template B] Sidebar blocks:', sidebarBlocks.map(b => ({ id: b.id, category: b.category })))
-  console.log('🎨 [Template B] Main blocks:', mainBlocks.map(b => ({ id: b.id, category: b.category })))
 
   // Find contact block for header
   const contactBlock = blocks.find(b => b.category === 'contact')
@@ -335,14 +326,8 @@ const TemplateB: React.FC<TemplateBProps> = ({ blocks, layout }) => {
 
   // Render sidebar entry (education, certifications, etc.)
   const renderSidebarEntry = (entry: any, idx: number) => {
-    console.log('🔍 [renderSidebarEntry] idx:', idx)
-    console.log('🔍 [renderSidebarEntry] entry:', entry)
-    console.log('🔍 [renderSidebarEntry] isEducation:', isEducationEntry(entry))
-    console.log('🔍 [renderSidebarEntry] isCertification:', isCertificationEntry(entry))
-
     // Education entry
     if (isEducationEntry(entry)) {
-      console.log('Education entry found')
       return (
         <View key={idx} style={styles.educationEntry}>
           <Text style={styles.degree}>{entry.degree}</Text>

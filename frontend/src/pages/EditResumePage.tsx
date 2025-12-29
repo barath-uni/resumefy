@@ -52,11 +52,7 @@ export default function EditResumePage() {
           return
         }
 
-        console.log('✅ Loaded job:', job)
-
         // Fetch fresh content from backend (same approach as GeneratedResumesPage)
-        console.log('📥 [EditResume] Fetching fresh content from backend...')
-
         const { data, error } = await supabase.functions.invoke('generate-tailored-resume', {
           body: {
             jobId: jobId,
@@ -80,9 +76,6 @@ export default function EditResumePage() {
           navigate('/app/my-resumes')
           return
         }
-
-        console.log('✅ [EditResume] Received content from backend:', blocks.length, 'blocks')
-        console.log('📦 [EditResume] Sample block:', blocks[0])
 
         setJobTitle(job.job_title)
         setOriginalBlocks(blocks)

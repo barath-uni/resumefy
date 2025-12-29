@@ -77,12 +77,10 @@ export function usePDFExport(options?: UsePDFExportOptions) {
     setProgress(0)
 
     try {
-      console.log('[usePDFExport] Starting PDF generation for template:', params.templateId)
       setProgress(20)
 
       // Get the template component
       const TemplateComponent = getTemplateComponent(params.templateId)
-      console.log('[usePDFExport] Template component loaded')
       setProgress(40)
 
       // Create the PDF document element
@@ -92,16 +90,10 @@ export function usePDFExport(options?: UsePDFExportOptions) {
           layout={params.layout}
         />
       )
-      console.log('[usePDFExport] Document element created')
       setProgress(60)
 
       // Generate PDF blob
-      console.log('[usePDFExport] Generating PDF blob...')
       const blob = await pdf(documentElement).toBlob()
-      console.log('[usePDFExport] PDF blob generated:', {
-        size: blob.size,
-        type: blob.type
-      })
       setProgress(100)
 
       // Success callback
@@ -155,7 +147,6 @@ export function usePDFExport(options?: UsePDFExportOptions) {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      console.log('[usePDFExport] PDF downloaded successfully')
       return true
 
     } catch (err) {

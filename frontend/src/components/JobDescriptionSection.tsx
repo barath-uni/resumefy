@@ -106,8 +106,6 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
   }
 
   const handleGeneratePDF = async (jobId: string, templateName: string) => {
-    console.log('[JobDescriptionSection] Starting PDF generation:', { jobId, templateName })
-
     // Update local state to show generating
     setJobs(jobs.map(j =>
       j.id === jobId
@@ -127,11 +125,9 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
 
       // If tailored_json exists, use frontend PDF generation
       if (jobData?.tailored_json?.blocks && jobData?.tailored_json?.layout) {
-        console.log('[JobDescriptionSection] Using frontend PDF generation')
         await handleFrontendGeneration(jobId, templateName, jobData.tailored_json, jobData.user_id)
       } else {
         // Fallback to backend generation (for backwards compatibility)
-        console.log('[JobDescriptionSection] Falling back to backend generation')
         await handleBackendGeneration(jobId, templateName)
       }
     } catch (error) {
@@ -150,7 +146,6 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
     tailoredJson: any,
     jobUserId: string
   ) => {
-    console.log('[JobDescriptionSection] Frontend generation started')
 
     // Use the hook inline
     const { generatePDF } = usePDFExport()
@@ -165,8 +160,6 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
       throw new Error('Failed to generate PDF blob')
     }
 
-    console.log('[JobDescriptionSection] PDF blob generated:', blob.size, 'bytes')
-
     // Upload to Supabase
     const result = await completePDFGeneration({
       blob,
@@ -178,8 +171,6 @@ export default function JobDescriptionSection({ resumeId, userId }: JobDescripti
     if (!result.success) {
       throw new Error(result.error || 'Failed to upload PDF')
     }
-
-    console.log('[JobDescriptionSection] PDF uploaded successfully:', result.pdfUrl)
 
     // Reload jobs to get updated data
     await loadJobs()

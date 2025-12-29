@@ -64,7 +64,6 @@ export default function BillingPage() {
     setCheckoutLoading(true)
 
     try {
-      console.log('🔄 Creating Stripe checkout session for tier:', selectedPlan)
 
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession()
@@ -89,7 +88,6 @@ export default function BillingPage() {
         throw new Error('No checkout URL returned')
       }
 
-      console.log('✅ Checkout session created, redirecting to Stripe...')
 
       // Redirect to Stripe Checkout
       window.location.href = data.url

@@ -86,10 +86,6 @@ export default function GeneratedResumesPage() {
   const [previewTemplate, setPreviewTemplate] = useState<string>('A')
   const [isSwitchingTemplate, setIsSwitchingTemplate] = useState(false)
 
-  // Debug preview job state
-  useEffect(() => {
-    console.log('🔍 previewJob state changed:', previewJob?.id || 'null')
-  }, [previewJob])
 
   useEffect(() => {
     const loadData = async () => {
@@ -131,7 +127,7 @@ export default function GeneratedResumesPage() {
           }
         }
       } catch (error) {
-        console.error('Error loading generated resumes page:', error)
+        // Error loading page
       } finally {
         setLoading(false)
       }
@@ -150,14 +146,6 @@ export default function GeneratedResumesPage() {
       .order('created_at', { ascending: false })
 
     if (jobs) {
-      console.log('📊 [Jobs Loaded]', jobs.length, 'jobs')
-      console.log('📊 [First Job Data]', jobs[0])
-      if (jobs[0]) {
-        console.log('📊 [Missing Skills]', jobs[0].missing_skills)
-        console.log('📊 [Recommendations]', jobs[0].recommendations)
-        console.log('📊 [Fit Score Breakdown]', jobs[0].fit_score_breakdown)
-      }
-
       // Parse JSONB data if it comes as string arrays
       const parsedJobs = jobs.map(job => {
         const parsed = { ...job }
@@ -166,9 +154,8 @@ export default function GeneratedResumesPage() {
         if (Array.isArray(job.missing_skills) && job.missing_skills.length > 0 && typeof job.missing_skills[0] === 'string') {
           try {
             parsed.missing_skills = job.missing_skills.map((s: string) => JSON.parse(s))
-            console.log('✅ Parsed missing_skills for job', job.id)
           } catch (e) {
-            console.error('❌ Failed to parse missing_skills:', e)
+            // Failed to parse missing_skills
           }
         }
 
@@ -176,9 +163,8 @@ export default function GeneratedResumesPage() {
         if (Array.isArray(job.recommendations) && job.recommendations.length > 0 && typeof job.recommendations[0] === 'string') {
           try {
             parsed.recommendations = job.recommendations.map((s: string) => JSON.parse(s))
-            console.log('✅ Parsed recommendations for job', job.id)
           } catch (e) {
-            console.error('❌ Failed to parse recommendations:', e)
+            // Failed to parse recommendations
           }
         }
 
@@ -194,7 +180,6 @@ export default function GeneratedResumesPage() {
       )
 
       if (incompleteJobs.length > 0) {
-        console.log('🔄 Found', incompleteJobs.length, 'incomplete jobs, starting polling...')
         startContinuousPolling(incompleteJobs.map(j => j.id))
       }
     }
@@ -203,8 +188,6 @@ export default function GeneratedResumesPage() {
   // Continuous polling for incomplete jobs (used on page load)
   const startContinuousPolling = (jobIds: string[]) => {
     if (jobIds.length === 0) return
-
-    console.log('🔁 Starting continuous polling for', jobIds.length, 'incomplete jobs')
 
     const pollInterval = setInterval(async () => {
       try {
@@ -223,7 +206,6 @@ export default function GeneratedResumesPage() {
           )
 
           if (!stillIncomplete) {
-            console.log('✅ All monitored jobs completed, stopping polling')
             clearInterval(pollInterval)
           }
         }
@@ -235,7 +217,6 @@ export default function GeneratedResumesPage() {
     // Cleanup after 10 minutes
     setTimeout(() => {
       clearInterval(pollInterval)
-      console.log('⏱️ Continuous polling timeout after 10 minutes')
     }, 600000)
   }
 
@@ -255,8 +236,6 @@ export default function GeneratedResumesPage() {
         return
       }
 
-      console.log('🗑️ Deleting job:', jobToDelete)
-
       const { data, error } = await supabase.functions.invoke('delete-job', {
         body: { jobId: jobToDelete },
         headers: {
@@ -273,8 +252,6 @@ export default function GeneratedResumesPage() {
         })
         return
       }
-
-      console.log('✅ Job deleted successfully')
 
       // Show success toast
       toast({
@@ -306,11 +283,7 @@ export default function GeneratedResumesPage() {
     setIsSwitchingTemplate(true)
 
     try {
-      console.log('🔄 [Frontend PDF] Switching template from', jobToSwitch.template_used, 'to', newTemplate)
-
       // ALWAYS fetch fresh content from backend (don't trust database tailored_json - it might be in pdfmake format)
-      console.log('📥 [Frontend PDF] Fetching fresh content from backend...')
-
       const { data, error } = await supabase.functions.invoke('generate-tailored-resume', {
         body: {
           jobId: jobToSwitch.id,
@@ -319,7 +292,6 @@ export default function GeneratedResumesPage() {
         }
       })
 
-      console.log("SWITCHING, JOB CONTENT", data)
       if (error || !data?.success) {
         console.error('❌ [Frontend PDF] Backend error:', error, data)
         throw new Error(error?.message || data?.error || 'Failed to fetch resume content')
@@ -334,12 +306,7 @@ export default function GeneratedResumesPage() {
         throw new Error('Backend did not return tailored content')
       }
 
-      console.log('✅ [Frontend PDF] Received content from backend:', blocks.length, 'blocks')
-      console.log('📦 [Frontend PDF] Sample block:', blocks[0])
-
       // ALWAYS use Frontend PDF Generation
-      console.log('📄 [Frontend PDF] Generating PDF with template', newTemplate)
-      console.log('📄 [Frontend PDF] Blocks:', blocks.length)
 
       const pdfBlob = await generatePDF({
         templateId: newTemplate as 'A' | 'B' | 'C' | 'D',
@@ -351,11 +318,8 @@ export default function GeneratedResumesPage() {
         throw new Error('Failed to generate PDF')
       }
 
-      console.log('✅ [Frontend PDF] PDF generated, size:', pdfBlob.size)
-
       // Convert blob to object URL for preview (NO UPLOAD - just in-memory preview)
       const pdfObjectUrl = URL.createObjectURL(pdfBlob)
-      console.log('📄 [Frontend PDF] Created object URL for preview:', pdfObjectUrl)
 
       // Update the job in the list
       const updatedJobs = allJobs.map(j =>
@@ -374,8 +338,6 @@ export default function GeneratedResumesPage() {
           pdf_url: pdfObjectUrl
         })
       }
-      console.log('✅ [Frontend PDF] Job updated with new template (in-memory, not uploaded)')
-
       toast({
         title: "Template switched",
         description: `Resume regenerated with Template ${newTemplate}`,
@@ -562,7 +524,6 @@ export default function GeneratedResumesPage() {
                               {/* PDF Preview Thumbnail */}
                               <button
                                 onClick={() => {
-                                  console.log('🖼️ Preview clicked:', job)
                                   setPreviewJob(job)
                                   setPreviewTemplate(job.template_used || 'A')
                                 }}
@@ -933,7 +894,6 @@ export default function GeneratedResumesPage() {
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6"
           style={{ zIndex: 9999 }}
           onClick={(e) => {
-            console.log('🎯 Backdrop clicked')
             if (e.target === e.currentTarget) setPreviewJob(null)
           }}
         >

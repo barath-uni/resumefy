@@ -26,11 +26,9 @@ export function useRealtimePDFPreview(
     // Debounce PDF generation (500ms)
     debounceTimerRef.current = setTimeout(async () => {
       if (!blocks || blocks.length === 0 || !layout) {
-        console.log('⚠️ [PDF Preview] Missing blocks or layout, skipping generation')
         return
       }
 
-      console.log('🔄 [PDF Preview] Generating PDF with template', templateId)
       setIsGenerating(true)
 
       try {
@@ -48,7 +46,6 @@ export function useRealtimePDFPreview(
 
         // Create object URL for in-memory preview (NO UPLOAD)
         const url = URL.createObjectURL(blob)
-        console.log('✅ [PDF Preview] PDF generated, size:', blob.size, 'bytes')
 
         // Cleanup previous URL to avoid memory leaks
         if (previousUrlRef.current) {

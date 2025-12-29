@@ -24,7 +24,6 @@ export const initClarity = () => {
   `;
 
   document.head.appendChild(script);
-  console.log('✅ Microsoft Clarity initialized');
 };
 
 /**

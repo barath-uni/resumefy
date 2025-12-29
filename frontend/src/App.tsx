@@ -29,18 +29,15 @@ function App() {
   // Check authentication state on mount
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('🔐 [App] Checking auth state...')
       const { data: { session } } = await supabase.auth.getSession()
       setIsAuthenticated(!!session)
       setIsLoading(false)
-      console.log('✅ [App] Auth state:', !!session ? 'authenticated' : 'not authenticated')
     }
 
     checkAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔄 [App] Auth state changed:', _event)
       setIsAuthenticated(!!session)
     })
 
@@ -53,13 +50,6 @@ function App() {
     initClarity()
     analytics.trackLandingPageView()
   }, [])
-
-  console.log('🎨 [App] Rendering...', {
-    path: window.location.pathname,
-    hash: window.location.hash,
-    isAuthenticated,
-    isLoading
-  })
 
   // Show loading state while checking auth
   if (isLoading) {

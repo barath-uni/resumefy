@@ -28,25 +28,17 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
   const [paywallCurrent, setPaywallCurrent] = useState<number | undefined>(undefined)
   const [paywallLimit, setPaywallLimit] = useState<number | undefined>(undefined)
 
-  console.log('🎨 ResumeUpload rendered', { userId, existingResume })
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    console.log('📂 onDrop triggered!', { acceptedFiles, filesCount: acceptedFiles.length })
-
     const file = acceptedFiles[0]
     if (!file) {
-      console.log('❌ No file selected')
       return
     }
 
-    console.log('📄 File selected:', { name: file.name, size: file.size, type: file.type })
-
     // PAYWALL CHECK - Frontend Layer
-    console.log('🔒 [Paywall] Checking if user can upload resume...')
     const paywallCheck = await checkCanUploadResume(userId)
 
     if (!paywallCheck.allowed) {
-      console.log('❌ [Paywall] Resume upload blocked:', paywallCheck.reason)
       setPaywallMessage(paywallCheck.message || 'Resume upload limit reached')
       setPaywallCurrent(paywallCheck.current)
       setPaywallLimit(paywallCheck.limit)
@@ -54,22 +46,15 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
       return // STOP HERE - Don't upload
     }
 
-    console.log('✅ [Paywall] User authorized to upload resume')
-
     setUploadedFile(file)
     setError(null)
     setSuccess(false)
     setUploading(true)
 
-    console.log('🔄 Calling uploadResume function...')
-
     try {
       const result = await uploadResume(file, userId)
 
-      console.log('📥 Upload result:', result)
-
       if (result.success && result.resumeId && result.fileUrl) {
-        console.log('✅ Upload successful!')
         setSuccess(true)
         onUploadSuccess(result.resumeId, result.fileUrl)
       } else {
@@ -81,7 +66,6 @@ export default function ResumeUpload({ userId, onUploadSuccess, existingResume }
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setUploading(false)
-      console.log('🏁 Upload process complete')
     }
   }, [userId, onUploadSuccess])
 

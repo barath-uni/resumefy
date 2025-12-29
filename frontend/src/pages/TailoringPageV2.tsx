@@ -185,12 +185,10 @@ export default function TailoringPageV2() {
       return
     }
 
-    console.log('🚀 Starting bulk generation for', validJobs.length, 'jobs')
 
     // Paywall check
     const paywallCheck = await checkCanGeneratePDF(userId)
     if (!paywallCheck.allowed) {
-      console.log('❌ [Paywall] Bulk generation blocked:', paywallCheck.reason)
       setPaywallReason('pdf_generation')
       setPaywallMessage(paywallCheck.message || 'Upgrade to generate PDFs')
       setShowPaywall(true)
@@ -224,7 +222,6 @@ export default function TailoringPageV2() {
         return
       }
 
-      console.log('✅ Bulk generation started:', data.jobIds)
 
       // Start polling for results
       startPolling(data.jobIds)
@@ -238,7 +235,6 @@ export default function TailoringPageV2() {
   }
 
   const startPolling = async (jobIds: string[]) => {
-    console.log('🔄 Starting polling for job IDs:', jobIds)
 
     const messages = [
       'Analyzing job requirements...',
@@ -280,7 +276,6 @@ export default function TailoringPageV2() {
           )
 
           if (allDone) {
-            console.log('✅ All jobs completed')
             clearInterval(pollInterval)
             clearInterval(messageInterval)
             setProgressMessage('All done! Redirecting...')
@@ -303,7 +298,6 @@ export default function TailoringPageV2() {
       clearInterval(pollInterval)
       clearInterval(messageInterval)
       if (isGenerating) {
-        console.log('⏱️ Polling timeout')
         setIsGenerating(false)
         setShowProgressModal(false)
         // Navigate anyway even if timeout
