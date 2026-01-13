@@ -20,6 +20,7 @@ interface JobInput {
   url?: string
   isUrlMode: boolean
   error?: string
+  isFetchingUrl?: boolean
 }
 
 interface BulkJob {
@@ -146,6 +147,60 @@ export default function TailoringPageV2() {
     setJobInputs(jobInputs.map(job =>
       job.id === id ? { ...job, isUrlMode: !job.isUrlMode } : job
     ))
+  }
+
+  const fetchJobFromUrl = async (id: string, url: string) => {
+    if (!url.trim()) {
+      return
+    }
+
+    // Set loading state
+    setJobInputs(jobInputs.map(job =>
+      job.id === id ? { ...job, isFetchingUrl: true, error: undefined } : job
+    ))
+
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-job-url', {
+        body: { url }
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (!data.success) {
+        // Show error message from backend
+        setJobInputs(jobInputs.map(job =>
+          job.id === id ? {
+            ...job,
+            isFetchingUrl: false,
+            error: data.error || 'Failed to fetch job from URL'
+          } : job
+        ))
+        return
+      }
+
+      // Success - populate title and description
+      setJobInputs(jobInputs.map(job =>
+        job.id === id ? {
+          ...job,
+          title: data.title || job.title,
+          description: data.description || job.description,
+          isFetchingUrl: false,
+          error: undefined
+        } : job
+      ))
+
+    } catch (err) {
+      console.error('Error fetching job URL:', err)
+      setJobInputs(jobInputs.map(job =>
+        job.id === id ? {
+          ...job,
+          isFetchingUrl: false,
+          error: 'Failed to fetch job from URL. Please try again or paste the description manually.'
+        } : job
+      ))
+    }
   }
 
   const validateJobs = (): boolean => {
@@ -433,12 +488,31 @@ export default function TailoringPageV2() {
 
                       {/* URL or Description input */}
                       {job.isUrlMode ? (
-                        <Input
-                          placeholder="https://linkedin.com/jobs/..."
-                          value={job.url}
-                          onChange={(e) => updateJob(job.id, 'url', e.target.value)}
-                          className="text-sm"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://linkedin.com/jobs/..."
+                            value={job.url}
+                            onChange={(e) => updateJob(job.id, 'url', e.target.value)}
+                            className="text-sm flex-1"
+                            disabled={job.isFetchingUrl}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => fetchJobFromUrl(job.id, job.url || '')}
+                            disabled={!job.url?.trim() || job.isFetchingUrl}
+                            className="px-4"
+                          >
+                            {job.isFetchingUrl ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Fetching...
+                              </>
+                            ) : (
+                              'Fetch'
+                            )}
+                          </Button>
+                        </div>
                       ) : (
                         <Textarea
                           placeholder="Paste the full job description here..."
