@@ -164,23 +164,44 @@ export default function TailoringPageV2() {
         body: { url }
       })
 
+      console.log('🔍 Fetch response:', { data, error })
+
       if (error) {
         throw new Error(error.message)
       }
 
       if (!data.success) {
-        // Show error message from backend
+        // Auto-switch to manual mode with user-friendly message
         setJobInputs(jobInputs.map(job =>
           job.id === id ? {
             ...job,
+            title: data.title || job.title,  // Keep fetched title if available
             isFetchingUrl: false,
-            error: data.error || 'Failed to fetch job from URL'
+            isUrlMode: false, // Switch to manual input
+            error: data.title
+              ? "We found the job title but couldn't get the full description. Please paste it below."
+              : "We couldn't access this link. Please paste the job description below instead."
           } : job
         ))
         return
       }
 
-      // Success - populate title and description
+      // Success - but double-check description is meaningful (min 200 chars)
+      if (!data.description || data.description.trim().length < 200) {
+        console.log('⚠️ Description too short or missing (length:', data.description?.length || 0, '), switching to manual mode')
+        setJobInputs(jobInputs.map(job =>
+          job.id === id ? {
+            ...job,
+            title: data.title || job.title,  // Keep fetched title
+            isFetchingUrl: false,
+            isUrlMode: false, // Switch to manual input
+            error: "We found the job title but couldn't get the full description. Please paste it below."
+          } : job
+        ))
+        return
+      }
+
+      // Full success - populate title and description
       setJobInputs(jobInputs.map(job =>
         job.id === id ? {
           ...job,
@@ -192,12 +213,14 @@ export default function TailoringPageV2() {
       ))
 
     } catch (err) {
-      console.error('Error fetching job URL:', err)
+      console.error('❌ Error fetching job URL:', err)
+      // Auto-switch to manual mode on error
       setJobInputs(jobInputs.map(job =>
         job.id === id ? {
           ...job,
           isFetchingUrl: false,
-          error: 'Failed to fetch job from URL. Please try again or paste the description manually.'
+          isUrlMode: false, // Switch to manual input
+          error: "We couldn't access this link. Please paste the job description below instead."
         } : job
       ))
     }
@@ -214,9 +237,19 @@ export default function TailoringPageV2() {
         isValid = false
         return { ...job, error: 'Job URL is required' }
       }
+      // CRITICAL: If URL mode is selected, description must be fetched
+      if (job.isUrlMode && job.url?.trim() && !job.description.trim()) {
+        isValid = false
+        return { ...job, error: 'Please click "Fetch" to load the job description from the URL' }
+      }
       if (!job.isUrlMode && !job.description.trim()) {
         isValid = false
         return { ...job, error: 'Job description is required' }
+      }
+      // Final check: description must always be present
+      if (!job.description.trim()) {
+        isValid = false
+        return { ...job, error: 'Job description is required. Click "Fetch" or switch to manual input.' }
       }
       return job
     })
@@ -488,37 +521,58 @@ export default function TailoringPageV2() {
 
                       {/* URL or Description input */}
                       {job.isUrlMode ? (
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="https://linkedin.com/jobs/..."
-                            value={job.url}
-                            onChange={(e) => updateJob(job.id, 'url', e.target.value)}
-                            className="text-sm flex-1"
-                            disabled={job.isFetchingUrl}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => fetchJobFromUrl(job.id, job.url || '')}
-                            disabled={!job.url?.trim() || job.isFetchingUrl}
-                            className="px-4"
-                          >
-                            {job.isFetchingUrl ? (
-                              <>
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Fetching...
-                              </>
-                            ) : (
-                              'Fetch'
-                            )}
-                          </Button>
-                        </div>
+                        <>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="https://linkedin.com/jobs/..."
+                              value={job.url}
+                              onChange={(e) => updateJob(job.id, 'url', e.target.value)}
+                              className="text-sm flex-1"
+                              disabled={job.isFetchingUrl}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => fetchJobFromUrl(job.id, job.url || '')}
+                              disabled={!job.url?.trim() || job.isFetchingUrl}
+                              className="px-4"
+                            >
+                              {job.isFetchingUrl ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  Fetching...
+                                </>
+                              ) : (
+                                'Fetch'
+                              )}
+                            </Button>
+                          </div>
+                          {/* Show fetched description preview */}
+                          {job.description.trim() && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-500">
+                                <CheckCircle className="w-3 h-3" />
+                                <span className="font-medium">Job description loaded ({job.description.length} characters)</span>
+                              </div>
+                              <Textarea
+                                value={job.description}
+                                onChange={(e) => updateJob(job.id, 'description', e.target.value)}
+                                rows={6}
+                                className="text-xs bg-muted/30"
+                                placeholder="Fetched job description will appear here..."
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                ✏️ You can edit the description above if needed
+                              </p>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <Textarea
                           placeholder="Paste the full job description here..."
                           value={job.description}
                           onChange={(e) => updateJob(job.id, 'description', e.target.value)}
-                          rows={4}
+                          rows={6}
                           className="text-sm"
                         />
                       )}
