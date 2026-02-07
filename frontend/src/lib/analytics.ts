@@ -134,5 +134,18 @@ export const analytics = {
         intent_response: intent,
       }
     })
+  },
+
+  // Feature intent tracking (PKD EXPERIMENT - Batch Apply vs Single Tailor)
+  trackFeatureIntent: (location: 'upload_modal' | 'dashboard_sidebar' | 'tailoring_v2_panel', intentType: 'batch_apply' | 'single_tailor') => {
+    trackEvent('feature_intent_click', {
+      event_category: 'engagement',
+      event_label: `${location}_${intentType}`,
+      value: intentType === 'batch_apply' ? 10 : 5, // Higher value for batch intent
+      custom_parameters: {
+        location,
+        intent_type: intentType
+      }
+    })
   }
 }

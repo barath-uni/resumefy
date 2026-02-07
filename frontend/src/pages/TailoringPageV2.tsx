@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Loader2, Plus, X, Link as LinkIcon, FileText, Sparkles, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { Loader2, Plus, X, Link as LinkIcon, FileText, Sparkles, AlertCircle, CheckCircle, Clock, Zap, Briefcase } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -12,6 +12,8 @@ import { checkCanGeneratePDF } from '../lib/paywall'
 import { Progress } from '../components/ui/progress'
 import { Dialog, DialogContent } from '../components/ui/dialog'
 import { templates } from '../lib/templateData'
+import { analytics } from '../lib/analytics'
+import { toast } from '../hooks/use-toast'
 
 interface JobInput {
   id: string
@@ -654,6 +656,38 @@ export default function TailoringPageV2() {
                   </button>
                 ))}
               </div>
+            </Card>
+
+            {/* PKD Experiment: Batch Apply Suggestion */}
+            <Card className="p-6 mb-6 border-2 border-primary/20 bg-muted/30">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Briefcase className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Matching Opportunities</h3>
+                  <p className="text-xs text-muted-foreground">14 jobs match your resume across top companies</p>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => {
+                  analytics.trackFeatureIntent('tailoring_v2_panel', 'batch_apply')
+                  toast({
+                    title: "⚡ Feature under construction!",
+                    description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
+                    duration: 5000
+                  })
+                }}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Apply to All in One Click
+              </Button>
+
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                Save hours with bulk tailoring
+              </p>
             </Card>
 
             {/* How it works */}

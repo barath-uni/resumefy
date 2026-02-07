@@ -1,10 +1,11 @@
 import { useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "./ui/button"
-import { X, Upload, FileText, Check, Mail, AlertCircle, CheckCircle, Plus, Trash2 } from "lucide-react"
+import { X, Upload, FileText, Check, Mail, AlertCircle, CheckCircle, Plus, Trash2, Zap, FileEdit } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { analytics } from "../lib/analytics"
 import { useNavigate } from "react-router-dom"
+import { toast } from "../hooks/use-toast"
 
 interface JobEntry {
   id: string
@@ -597,13 +598,43 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-heading font-medium text-gray-900 mb-2">Check Your Email!</h2>
+                  <h2 className="text-2xl font-heading font-medium text-gray-900 mb-2">Resume Received!</h2>
                   <p className="text-gray-700 font-medium">
                     We've sent a confirmation link to <strong className="text-gray-900">{email}</strong>
                   </p>
-                  <p className="text-gray-600 text-sm mt-2">
-                    Click the link in your email to view your resume analysis and download your tailored resume.
+                  <p className="text-emerald-600 text-sm font-semibold mt-3">
+                    ✨ We found 14 job matches for you! Sign in to batch-apply immediately.
                   </p>
+                </div>
+
+                {/* PKD Experiment: Batch Apply Intent Buttons */}
+                <div className="space-y-3 pt-2">
+                  <Button
+                    onClick={() => {
+                      analytics.trackFeatureIntent('upload_modal', 'batch_apply')
+                      toast({
+                        title: "⚡ Feature under construction!",
+                        description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
+                        duration: 5000
+                      })
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white border-0 font-heading py-6"
+                  >
+                    <Zap className="w-5 h-5 mr-2" />
+                    Apply to 14 Jobs in Minutes
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      analytics.trackFeatureIntent('upload_modal', 'single_tailor')
+                      handleClose()
+                    }}
+                    variant="outline"
+                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 py-6"
+                  >
+                    <FileEdit className="w-5 h-5 mr-2" />
+                    Tailor Resume Manually
+                  </Button>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
@@ -612,13 +643,6 @@ export default function UploadModal({ isOpen, onClose, isAuthenticated }: Upload
                     The link expires in 15 minutes for your security. Check your spam folder if you don't see it.
                   </div>
                 </div>
-
-                <Button
-                  onClick={handleClose}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 font-heading"
-                >
-                  Got it!
-                </Button>
               </motion.div>
             )}
           </AnimatePresence>

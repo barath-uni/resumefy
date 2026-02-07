@@ -1,9 +1,10 @@
 import { Button } from "../components/ui/button"
-import { Upload } from "lucide-react"
+import { Upload, Zap } from "lucide-react"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { analytics } from "../lib/analytics"
+import { toast } from "../hooks/use-toast"
 
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 2000, suffix = "", prefix = "" }: { end: number, duration?: number, suffix?: string, prefix?: string }) {
@@ -191,7 +192,25 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                         </p>
                       </div>
 
-                      <div className="flex flex-col items-center gap-2 pt-2">
+                      <div className="flex flex-col items-center gap-4 pt-2">
+                        {/* PKD Experiment: Batch Apply Intent Button */}
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            analytics.trackFeatureIntent('upload_modal', 'batch_apply')
+                            toast({
+                              title: "⚡ Feature under construction!",
+                              description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
+                              duration: 5000
+                            })
+                            handleGetStarted()
+                          }}
+                          className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white border-0 px-6 py-3 text-sm font-semibold shadow-md"
+                        >
+                          <Zap className="w-4 h-4 mr-2" />
+                          Apply to 14 Jobs Instantly
+                        </Button>
+
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>

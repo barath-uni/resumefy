@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Upload, FileCheck, Clock, ArrowRight, Eye } from 'lucide-react'
+import { FileText, Upload, FileCheck, Clock, ArrowRight, Eye, Zap, Sparkles } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
@@ -13,6 +13,7 @@ import { extractResumeText } from '../lib/parseResume'
 import { analytics } from '../lib/analytics'
 import { typography } from '../lib/typography'
 import ResumeUpload from '../components/ResumeUpload'
+import { toast } from '../hooks/use-toast'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -143,6 +144,54 @@ export default function DashboardPage() {
         ) : (
           /* After Upload: Resume preview + tailoring action */
           <div>
+            {/* PKD Experiment: Batch Apply Intent Banner */}
+            <Card className="mb-8 border-2 border-primary/20 bg-card shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-2xl font-heading font-bold text-foreground mb-2">
+                      14 jobs matching your resume
+                    </h3>
+                    <p className="text-muted-foreground text-lg">
+                      Apply to all of them in minutes with AI-powered batch tailoring
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                    <Button
+                      onClick={() => {
+                        analytics.trackFeatureIntent('dashboard_sidebar', 'batch_apply')
+                        toast({
+                          title: "⚡ Feature under construction!",
+                          description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
+                          duration: 5000
+                        })
+                        navigate(`/app/tailor/${currentResume.id}`)
+                      }}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-6 text-base font-semibold"
+                    >
+                      <Zap className="w-5 h-5 mr-2" />
+                      Batch Apply to 14 Jobs
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        analytics.trackFeatureIntent('dashboard_sidebar', 'single_tailor')
+                        navigate(`/app/tailor/${currentResume.id}`)
+                      }}
+                      variant="outline"
+                      className="px-6 py-6 text-base"
+                    >
+                      Start Tailoring Manually
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
               {/* Resume Preview Card */}
               <Card className="shadow-sm">
