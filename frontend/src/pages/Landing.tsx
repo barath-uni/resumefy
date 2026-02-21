@@ -193,23 +193,36 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                       </div>
 
                       <div className="flex flex-col items-center gap-4 pt-2">
-                        {/* PKD Experiment: Batch Apply Intent Button */}
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            analytics.trackFeatureIntent('upload_modal', 'batch_apply')
-                            toast({
-                              title: "⚡ Feature under construction!",
-                              description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
-                              duration: 5000
-                            })
-                            handleGetStarted()
-                          }}
-                          className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white border-0 px-6 py-3 text-sm font-semibold shadow-md"
-                        >
-                          <Zap className="w-4 h-4 mr-2" />
-                          Apply to 14 Jobs Instantly
-                        </Button>
+                        {/* PKD Experiment: Dual Intent Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              analytics.trackFeatureIntent('upload_modal', 'batch_apply')
+                              toast({
+                                title: "⚡ Feature under construction!",
+                                description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
+                                duration: 5000
+                              })
+                              handleGetStarted()
+                            }}
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white border-0 px-5 py-3 text-sm font-semibold shadow-md"
+                          >
+                            <Zap className="w-4 h-4 mr-2" />
+                            Batch Apply to 14 Jobs
+                          </Button>
+
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              analytics.trackFeatureIntent('upload_modal', 'single_tailor')
+                              handleGetStarted()
+                            }}
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-0 px-5 py-3 text-sm font-semibold shadow-md"
+                          >
+                            Tailor Resume in 1 Min
+                          </Button>
+                        </div>
 
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1">
