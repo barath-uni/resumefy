@@ -147,5 +147,47 @@ export const analytics = {
         intent_type: intentType
       }
     })
+  },
+
+  // Demo video engagement tracking
+  trackDemoVideoPlayed: () => {
+    trackEvent('demo_video_played', {
+      event_category: 'engagement',
+      event_label: 'hero_demo_video_clicked',
+      value: 5
+    })
+  },
+
+  // Simplified CTA click tracking
+  trackSimplifiedCTAClick: (source: 'hero' | 'features' | 'how_it_works') => {
+    trackEvent('simplified_cta_click', {
+      event_category: 'conversion',
+      event_label: `cta_${source}`,
+      value: 10,
+      custom_parameters: {
+        cta_source: source
+      }
+    })
+  },
+
+  // Job link pasted tracking
+  trackJobLinkPasted: (linkType: 'linkedin' | 'indeed' | 'other' | 'text') => {
+    trackEvent('job_link_pasted', {
+      event_category: 'engagement',
+      event_label: `job_link_${linkType}`,
+      value: 8,
+      custom_parameters: {
+        link_type: linkType
+      }
+    })
+  },
+
+  // Animated hook view tracking
+  trackAnimatedHookView: () => {
+    trackEvent('animated_hook_viewed', {
+      event_category: 'engagement',
+      event_label: 'rotating_hook_displayed',
+      value: 1
+    })
   }
 }

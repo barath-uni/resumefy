@@ -1,55 +1,9 @@
 import { Button } from "../components/ui/button"
-import { Upload, Zap } from "lucide-react"
+import { Upload, Star, TrendingUp } from "lucide-react"
 import { motion } from "framer-motion"
-import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { analytics } from "../lib/analytics"
-import { toast } from "../hooks/use-toast"
-
-// Animated Counter Component
-function AnimatedCounter({ end, duration = 2000, suffix = "", prefix = "" }: { end: number, duration?: number, suffix?: string, prefix?: string }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTime: number | null = null;
-    let animationId: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-
-      setCount(Math.floor(progress * end));
-
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
-      }
-    };
-
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [end, duration]);
-
-  return <span>{prefix}{count}{suffix}</span>;
-}
-
-// Dynamic Resume Counter
-function DynamicResumeCounter() {
-  const [count, setCount] = useState(() => Math.floor(Math.random() * 15) + 12); // Start between 12-26
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Random increment every 30-45 seconds
-      const randomDelay = Math.random() * 15000 + 30000; // 30-45 seconds
-      setTimeout(() => {
-        setCount(prev => prev + (Math.random() > 0.7 ? 2 : 1)); // Mostly +1, sometimes +2
-      }, randomDelay);
-    }, 35000); // Check every 35 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return count;
-}
+import { TypeAnimation } from 'react-type-animation'
 
 interface LandingProps {
   onOpenUploadModal: () => void
@@ -138,234 +92,103 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="mb-6"
               >
-                <h1 className="text-5xl md:text-6xl font-heading font-bold leading-tight mb-6 text-gray-900">
-                  One upload, multiple jobs
-                  <br />
-                  <span className="text-emerald-600">Instant role-optimized Resumes</span>
+                <h1 className="text-5xl md:text-6xl font-heading font-bold leading-tight text-gray-900 min-h-[160px] md:min-h-[180px]">
+                  This resume gets you{' '}
+                  <span className="text-emerald-600 inline-block min-w-[280px] md:min-w-[400px]">
+                    <TypeAnimation
+                      sequence={[
+                        '3x interviews',
+                        2000,
+                        'past ATS bots',
+                        2000,
+                        'hired faster',
+                        2000,
+                      ]}
+                      wrapper="span"
+                      speed={50}
+                      repeat={Infinity}
+                    />
+                  </span>
                 </h1>
+                <p className="text-xl text-gray-700 mt-4 font-medium">
+                  Only 2% of resumes pass ATS. Yours will be one of them.
+                </p>
+              </motion.div>
+
+              {/* Social Proof Badge */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="flex items-center gap-4 mb-8"
+              >
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <span className="text-gray-700 font-medium">4.8/5</span>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <div className="flex items-center gap-1 text-gray-700">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  <span className="font-medium">1,200+ resumes tailored this week</span>
+                </div>
               </motion.div>
 
               <motion.p
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-xl text-gray-700 leading-relaxed mb-8 max-w-lg"
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="text-lg text-gray-600 font-body leading-relaxed mb-8 max-w-lg"
               >
-                Stop spending hours tailoring each resume. <br />Get role-specific optimization, ATS friendly Resumes in minutes
+                Get 3x more interview callbacks. Beat the ATS. Land the job.
               </motion.p>
 
+              {/* Primary CTA - Simple Upload Button */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="mb-12"
+                className="space-y-4"
               >
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="relative cursor-pointer group"
+                <Button
                   onClick={() => {
+                    analytics.trackSimplifiedCTAClick('hero')
                     analytics.trackUploadAttempt()
                     handleGetStarted()
                   }}
+                  className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white border-0 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl group"
                 >
-                  {/* Animated gradient border */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-emerald-600 to-blue-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-x"></div>
+                  <Upload className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Upload Resume - Get Started Free
+                </Button>
 
-                  {/* Dropzone */}
-                  <div className="relative bg-white rounded-2xl border-4 border-dashed border-blue-300 group-hover:border-emerald-400 transition-all duration-300 p-8 shadow-xl group-hover:shadow-2xl">
-                    <div className="flex flex-col items-center justify-center space-y-4">
-                      <motion.div
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="w-16 h-16 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg"
-                      >
-                        <Upload className="w-8 h-8 text-white" />
-                      </motion.div>
-
-                      <div className="text-center">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                          Click to upload your resume
-                        </h3>
-                        <p className="text-gray-600 text-lg">
-                          PDF or DOCX • Get instant analysis in 2 minutes
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col items-center gap-4 pt-2">
-                        {/* PKD Experiment: Dual Intent Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              analytics.trackFeatureIntent('upload_modal', 'batch_apply')
-                              toast({
-                                title: "⚡ Feature under construction!",
-                                description: "We're polishing the Batch-Apply engine. In the meantime, use your 5 free credits to tailor for these roles manually.",
-                                duration: 5000
-                              })
-                              handleGetStarted()
-                            }}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white border-0 px-5 py-3 text-sm font-semibold shadow-md"
-                          >
-                            <Zap className="w-4 h-4 mr-2" />
-                            Batch Apply to 14 Jobs
-                          </Button>
-
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              analytics.trackFeatureIntent('upload_modal', 'single_tailor')
-                              handleGetStarted()
-                            }}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-0 px-5 py-3 text-sm font-semibold shadow-md"
-                          >
-                            Tailor Resume in 1 Min
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-gray-600">Free</span>
-                          </div>
-                          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-gray-600">Secure</span>
-                          </div>
-                          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-gray-600">2 min results</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-gray-500">🌍 Works in your language - Portuguese, Spanish, French, and 50+ more</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-
-              {/* Stats */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="grid grid-cols-3 gap-8 max-w-md"
-              >
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    <AnimatedCounter end={5} suffix="+" />
-                  </div>
-                  <div className="text-sm text-gray-500">Hours Saved</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    <AnimatedCounter end={94} suffix="%" />
-                  </div>
-                  <div className="text-sm text-gray-500">Role-Fit Score</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
-                    <AnimatedCounter end={3} suffix="x" />
-                  </div>
-                  <div className="text-sm text-gray-500">More Interviews</div>
-                </div>
+                <p className="text-sm text-gray-500">
+                  PDF or DOCX • No credit card • Results in 60 seconds
+                </p>
               </motion.div>
             </div>
 
-            {/* Right side - Visual */}
+            {/* Right side - Demo Video */}
             <motion.div
               initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.5 }}
               className="relative lg:pl-12"
             >
-              {/* Main mockup container */}
-              <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-lg mx-auto">
-                {/* Browser-like header */}
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
-                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <div className="flex-1 bg-gray-50 rounded-lg px-3 py-1 ml-4">
-                    <div className="text-xs text-gray-500">resumefy.com/analysis</div>
-                  </div>
-                </div>
-
-                {/* Content mockup */}
-                <div className="space-y-4">
-                  {/* Header */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold">JD</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
-                      <div className="h-3 bg-gray-100 rounded w-24"></div>
-                    </div>
-                    <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                      94% Match
-                    </div>
-                  </div>
-
-                  {/* Skills matching */}
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium text-gray-700">Skills Analysis</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">React.js</span>
-                        <div className="flex-1 mx-3 bg-gray-100 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full w-5/6"></div>
-                        </div>
-                        <span className="text-xs text-green-600 font-medium">85%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">TypeScript</span>
-                        <div className="flex-1 mx-3 bg-gray-100 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full w-3/4"></div>
-                        </div>
-                        <span className="text-xs text-blue-600 font-medium">75%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">AWS</span>
-                        <div className="flex-1 mx-3 bg-gray-100 rounded-full h-2">
-                          <div className="bg-orange-500 h-2 rounded-full w-1/2"></div>
-                        </div>
-                        <span className="text-xs text-orange-600 font-medium">50%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Suggestions */}
-                  <div className="bg-blue-50 rounded-lg p-3">
-                    <div className="text-sm font-medium text-blue-900 mb-2">Suggestions</div>
-                    <div className="space-y-1">
-                      <div className="text-xs text-blue-700">• Add AWS certification details</div>
-                      <div className="text-xs text-blue-700">• Highlight TypeScript projects</div>
-                      <div className="text-xs text-blue-700">• Include React performance metrics</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Floating elements */}
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                  className="absolute -top-4 -right-4 bg-green-500 text-white text-xs px-3 py-1 rounded-full shadow-lg"
-                >
-                  +12 keywords
-                </motion.div>
-                <motion.div
-                  animate={{ y: [0, -3, 0] }}
-                  transition={{ duration: 2.5, repeat: Infinity, delay: 2 }}
-                  className="absolute -bottom-2 -left-4 bg-blue-500 text-white text-xs px-3 py-1 rounded-full shadow-lg"
-                >
-                  Optimized
-                </motion.div>
+              {/* Bunny Stream Demo Video - Extra Large */}
+              <div
+                className="relative rounded-2xl overflow-hidden shadow-2xl w-full max-w-4xl mx-auto"
+                style={{ paddingBottom: '75%', height: 0 }}
+                onClick={() => analytics.trackDemoVideoPlayed()}
+              >
+                <iframe
+                  src="https://player.mediadelivery.net/embed/607025/315d1b96-8849-4d8b-b2d6-cb40475965cc?autoplay=true&loop=false&muted=false&preload=true&responsive=true&volume=20"
+                  loading="lazy"
+                  style={{ border: 0, position: 'absolute', top: 0, height: '100%', width: '100%' }}
+                  allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                  allowFullScreen
+                ></iframe>
               </div>
 
               {/* Background decorative elements */}
@@ -380,13 +203,9 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
             transition={{ delay: 0.8 }}
             className="text-center mt-20"
           >
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500">
               Privacy-first • Auto-delete in 30 days • No data sharing
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-800">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span>Processing resume #{<DynamicResumeCounter />} today</span>
-            </div>
           </motion.div>
         </div>
       </section>
@@ -473,24 +292,6 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
             ))}
           </div>
 
-          {/* Additional Trust Elements */}
-          <div className="mt-16 text-center">
-            <div className="inline-flex items-center gap-6 bg-white rounded-2xl px-8 py-4 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-900 font-medium">Processing resume #{<DynamicResumeCounter />} today</span>
-              </div>
-              <div className="w-px h-6 bg-gray-200"></div>
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-1">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-6 h-6 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-full border-2 border-white"></div>
-                  ))}
-                </div>
-                <span className="text-sm text-gray-900 font-medium">23 users this hour</span>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -513,7 +314,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
               {
                 step: "01",
@@ -539,9 +340,16 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
               {
                 step: "04",
                 title: "Download & Apply",
-                desc: "Get your optimized resume in PDF and DOCX formats, ready for submission.",
+                desc: "Get your optimized resume in PDF format, ready for submission. Choose from 4 professional templates.",
                 icon: "🚀",
                 color: "from-orange-500 to-red-500"
+              },
+              {
+                step: "05",
+                title: "Scale to Multiple Jobs (Pro)",
+                desc: "Applying to 14 jobs? Upgrade to Pro for bulk generation - create tailored resumes for all roles at once.",
+                icon: "⚡",
+                color: "from-indigo-500 to-purple-600"
               }
             ].map((item, index) => (
               <motion.div
@@ -569,8 +377,8 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                   <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
 
                   {/* Connection line for larger screens */}
-                  {index < 3 && (
-                    <div className="hidden lg:block absolute top-12 -right-4 w-8 h-px bg-gradient-to-r from-gray-300 to-transparent"></div>
+                  {index < 4 && (
+                    <div className="hidden lg:block absolute top-12 -right-3 w-6 h-px bg-gradient-to-r from-gray-300 to-transparent"></div>
                   )}
                 </div>
               </motion.div>
@@ -582,6 +390,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
             <Button
               className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-medium text-lg border-0 shadow-lg hover:shadow-xl transition-all group"
               onClick={() => {
+                analytics.trackSimplifiedCTAClick('how_it_works')
                 analytics.trackUploadAttempt()
                 handleGetStarted()
               }}
@@ -851,8 +660,8 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
                 <div className="text-gray-300 text-sm">Average analysis time</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-                <div className="text-2xl font-bold text-white mb-1">{<DynamicResumeCounter />}+</div>
-                <div className="text-gray-300 text-sm">Resumes optimized today</div>
+                <div className="text-2xl font-bold text-white mb-1">3x</div>
+                <div className="text-gray-300 text-sm">More interviews</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-6">
                 <div className="text-2xl font-bold text-white mb-1">94%</div>
