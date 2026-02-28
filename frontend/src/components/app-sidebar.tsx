@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Home, FileText, CreditCard, Sparkles, HelpCircle } from "lucide-react"
+import { Home, FileText, CreditCard, Sparkles, HelpCircle, Ghost } from "lucide-react"
 import { Link } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { getUserResumes } from "@/lib/uploadResume"
@@ -63,6 +63,11 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       title: "Tailor Resume",
       url: tailorUrl,
       icon: Sparkles,
+    },
+    {
+      title: "Ghost Scanner",
+      url: "/app/ghost-scanner",
+      icon: Ghost,
     },
     {
       title: "Billing",

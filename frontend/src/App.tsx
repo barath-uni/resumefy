@@ -14,6 +14,7 @@ import Landing from "./pages/Landing"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
 import Support from "./pages/Support"
+import GhostScannerPage from "./pages/GhostScannerPage"
 import AppLayout from "./components/layout/AppLayout"
 import { analytics, initGA } from "./lib/analytics"
 import { initClarity } from "./lib/clarity"
@@ -142,6 +143,15 @@ function App() {
         <Route
           path="/app/billing/success"
           element={<PaymentSuccessPage />}
+        />
+
+        <Route
+          path="/app/ghost-scanner"
+          element={
+            <AppLayout>
+              <GhostScannerPage />
+            </AppLayout>
+          }
         />
 
         {/* Static Pages */}
