@@ -1,4 +1,31 @@
 {
+  "name": "resumefy-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "generate-link": "node -r dotenv/config generate-magic-link.js",
+    "winback-campaign": "node -r dotenv/config bulk-winback-campaign.js",
+    "winback-dry-run": "node -r dotenv/config bulk-winback-campaign.js --dry-run",
+    "winback-test": "node -r dotenv/config bulk-winback-campaign.js --dry-run",
+    "check-users": "node -r dotenv/config check-users.js",
+    "check-user": "node -r dotenv/config check-single-user.js",
+    "send-winback": "node -r dotenv/config send-winback-emails.js",
+    "send-winback-dry-run": "node -r dotenv/config send-winback-emails.js --dry-run",
+    "test-smtp": "node -r dotenv/config test-smtp.js",
+    "debug-smtp": "node -r dotenv/config debug-smtp.js",
+    "test-smtp-verbose": "node -r dotenv/config test-smtp-verbose.js",
+    "analyze-resumes": "node -r dotenv/config analyze-user-resumes.js",
+    "match-jobs": "node -r dotenv/config fetch-and-match-jobs.js",
+    "send-job-emails": "node -r dotenv/config send-job-match-emails.js --send",
+    "send-job-emails-dry": "node -r dotenv/config send-job-match-emails.js --dry-run",
+    "job-match-single": "node -r dotenv/config job-match-single-user.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1",
+    "nodemailer": "^8.0.1",
+    "openai": "^6.25.0"
+  },
   "devDependencies": {
     "stripe-cli": "^0.1.0"
   }

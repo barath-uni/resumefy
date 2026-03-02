@@ -7,10 +7,11 @@ import { TypeAnimation } from 'react-type-animation'
 
 interface LandingProps {
   onOpenUploadModal: () => void
+  onOpenSignInModal: () => void
   isAuthenticated?: boolean | null
 }
 
-export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingProps) {
+export default function Landing({ onOpenUploadModal, onOpenSignInModal, isAuthenticated }: LandingProps) {
   const navigate = useNavigate()
 
   const handleGetStarted = () => {
@@ -25,7 +26,7 @@ export default function Landing({ onOpenUploadModal, isAuthenticated }: LandingP
     if (isAuthenticated) {
       navigate('/app/dashboard')
     } else {
-      onOpenUploadModal()
+      onOpenSignInModal()
     }
   }
   return (

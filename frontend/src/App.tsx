@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom"
 import UploadModal from "./components/UploadModal"
+import SignInModal from "./components/SignInModal"
 import DashboardPage from "./pages/DashboardPage"
 import MyResumesPage from "./pages/MyResumesPage"
 import TailorResumePage from "./pages/TailorResumePage"
@@ -22,6 +23,7 @@ import { Toaster } from "./components/ui/toaster"
 
 function App() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
@@ -71,6 +73,7 @@ function App() {
           element={
             <Landing
               onOpenUploadModal={() => setIsUploadModalOpen(true)}
+              onOpenSignInModal={() => setIsSignInModalOpen(true)}
               isAuthenticated={isAuthenticated}
             />
           }
@@ -152,11 +155,21 @@ function App() {
 
       {/* Upload Modal - Show on Landing page, handle auth inside modal */}
       {window.location.pathname === '/' && (
-        <UploadModal
-          isOpen={isUploadModalOpen}
-          onClose={() => setIsUploadModalOpen(false)}
-          isAuthenticated={isAuthenticated}
-        />
+        <>
+          <UploadModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            isAuthenticated={isAuthenticated}
+          />
+          <SignInModal
+            isOpen={isSignInModalOpen}
+            onClose={() => setIsSignInModalOpen(false)}
+            onSwitchToUpload={() => {
+              setIsSignInModalOpen(false)
+              setIsUploadModalOpen(true)
+            }}
+          />
+        </>
       )}
       <Toaster />
     </>
