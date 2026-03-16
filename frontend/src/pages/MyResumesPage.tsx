@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Plus, Trash2, Eye, Sparkles, X } from 'lucide-react'
+import { FileText, Plus, Trash2, Eye, Sparkles, X, MessageSquare } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
@@ -220,13 +220,25 @@ export default function MyResumesPage() {
                   <h3 className="font-semibold text-foreground text-sm truncate mb-1">
                     {resume.file_name?.replace(/\.[^/.]+$/, '') || 'My Resume'}
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mb-3">
                     Uploaded {new Date(resume.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric'
                     })}
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/app/interrogator/${resume.id}`)
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Try Interrogator
+                  </Button>
                 </div>
               </Card>
             </motion.div>

@@ -1,0 +1,116 @@
+-- =====================================================
+-- ONBOARDING FIX: Auto-transfer resume from email_captures to resumes
+-- Created: 2026-01-20
+-- Purpose: Fix "ghost resume" issue where uploaded resumes disappear after signup
+-- =====================================================
+
+-- =====================================================
+-- FUNCTION: handle_new_user()
+-- Automatically runs when a new user signs up via magic link
+-- =====================================================
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_resume_exists BOOLEAN;
+  v_profile_exists BOOLEAN;
+BEGIN
+  -- =====================================================
+  -- STEP 1: Create user_profiles entry if not exists
+  -- =====================================================
+  SELECT EXISTS(
+    SELECT 1 FROM user_profiles WHERE user_id = NEW.id
+  ) INTO v_profile_exists;
+
+  IF NOT v_profile_exists THEN
+    INSERT INTO user_profiles (
+      user_id,
+      tier,
+      resumes_lifetime_count,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      NEW.id,
+      'free',
+      0,
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (user_id) DO NOTHING;
+  END IF;
+
+  -- =====================================================
+  -- STEP 2: Check if resume already exists for this user
+  -- =====================================================
+  SELECT EXISTS(
+    SELECT 1 FROM resumes WHERE user_id = NEW.id
+  ) INTO v_resume_exists;
+
+  -- Only transfer if user doesn't already have a resume
+  IF NOT v_resume_exists THEN
+    -- =====================================================
+    -- STEP 3: Transfer resume from email_captures to resumes
+    -- =====================================================
+    INSERT INTO resumes (
+      user_id,
+      file_url,
+      file_name,
+      file_size,
+      raw_text,
+      parsing_status,
+      page_count,
+      created_at,
+      updated_at
+    )
+    SELECT
+      NEW.id AS user_id,
+      ec.uploaded_file_url,
+      ec.uploaded_file_name,
+      ec.uploaded_file_size,
+      ec.raw_text,
+      CASE
+        WHEN ec.raw_text IS NOT NULL AND ec.raw_text != '' THEN 'completed'
+        ELSE 'pending'
+      END AS parsing_status,
+      NULL AS page_count, -- Will be populated by parse-resume function if needed
+      NOW() AS created_at,
+      NOW() AS updated_at
+    FROM email_captures ec
+    WHERE ec.email = NEW.email
+      AND ec.uploaded_file_url IS NOT NULL
+      AND ec.uploaded_file_url != ''
+    ORDER BY ec.upload_timestamp DESC
+    LIMIT 1
+    ON CONFLICT (id) DO NOTHING; -- Prevent duplicate resumes
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- TRIGGER: on_auth_user_created
+-- Fires after new user row is created in auth.users
+-- =====================================================
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_new_user();
+
+-- =====================================================
+-- GRANT PERMISSIONS
+-- =====================================================
+GRANT EXECUTE ON FUNCTION handle_new_user() TO postgres;
+GRANT EXECUTE ON FUNCTION handle_new_user() TO service_role;
+
+-- =====================================================
+-- COMMENTS (Documentation)
+-- =====================================================
+COMMENT ON FUNCTION handle_new_user() IS
+  'Automatically creates user_profiles and transfers resume from email_captures when user signs up.
+   Prevents "ghost resume" issue where uploads disappear after authentication.';
+
+COMMENT ON TRIGGER on_auth_user_created ON auth.users IS
+  'Fires after INSERT on auth.users to auto-transfer pre-auth resume data to authenticated user tables.';

@@ -6,6 +6,7 @@ import DashboardPage from "./pages/DashboardPage"
 import MyResumesPage from "./pages/MyResumesPage"
 import TailorResumePage from "./pages/TailorResumePage"
 import TailoringPageV2 from "./pages/TailoringPageV2"
+import InterrogatorPage from "./pages/InterrogatorPage"
 import GeneratedResumesPage from "./pages/GeneratedResumesPage"
 import EditResumePage from "./pages/EditResumePage"
 import BillingPage from "./pages/BillingPage"
@@ -115,6 +116,14 @@ function App() {
           element={
             <AppLayout>
               <TailoringPageV2 />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/interrogator/:resumeId"
+          element={
+            <AppLayout>
+              <InterrogatorPage />
             </AppLayout>
           }
         />

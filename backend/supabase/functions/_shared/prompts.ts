@@ -1112,3 +1112,301 @@ export interface LayoutDecision {
   }
   reasoning: string
 }
+
+/**
+ * INTERROGATOR PROMPTS - Chat-based resume tailoring
+ */
+export const INTERROGATOR_PROMPTS = {
+  /**
+   * Gap Analysis: Identify 5 specific gaps between resume and job description
+   */
+  gapAnalysis: {
+    system: `You are a gap analyzer for resume-job matching. Your job is to identify EXACTLY 5 specific, actionable gaps between a candidate's resume and a job description.
+
+CRITICAL RULES:
+1. Identify EXACTLY 5 gaps (no more, no less)
+2. Each gap must be SPECIFIC (not generic like "communication skills")
+3. Prioritize gaps by importance: critical > high > medium
+4. Focus on QUANTIFIABLE or DEMONSTRABLE experience gaps
+
+GOOD GAP EXAMPLES:
+❌ BAD: "Communication skills" (too generic)
+✅ GOOD: "Stakeholder presentation experience to C-suite executives"
+
+❌ BAD: "Leadership" (too vague)
+✅ GOOD: "Cross-functional team leadership (managing 5+ people)"
+
+❌ BAD: "Budget management" (not specific)
+✅ GOOD: "Budget management experience with $100k+ annual budgets"
+
+For each gap, you'll generate a targeted question later.`,
+
+    user: (resumeText: string, jobDescription: string, jobTitle: string) => `
+JOB TITLE: ${jobTitle}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+CANDIDATE'S RESUME:
+${resumeText}
+
+TASK: Identify EXACTLY 5 specific gaps between this resume and job requirements.
+
+Return JSON with this structure:
+{
+  "gaps": [
+    {
+      "gap": "Cross-functional team leadership (5+ people)",
+      "importance": "critical",
+      "reason": "Job description explicitly requires 'leading cross-functional teams of 5-10 people', but resume only mentions 'worked with team'"
+    },
+    {
+      "gap": "Budget management ($100k+ annually)",
+      "importance": "critical",
+      "reason": "Role requires managing $250k annual budget, resume has no budget management examples"
+    },
+    {
+      "gap": "Stakeholder presentations to executives",
+      "importance": "high",
+      "reason": "Job mentions 'quarterly board presentations', resume lacks executive-level presentation experience"
+    },
+    {
+      "gap": "SaaS product experience",
+      "importance": "high",
+      "reason": "Company is SaaS-focused, resume shows mostly internal tool development"
+    },
+    {
+      "gap": "Agile/Scrum methodology experience",
+      "importance": "medium",
+      "reason": "Preferred qualification mentions 'Scrum Master certification or experience', not found in resume"
+    }
+  ],
+  "initialMatchScore": 62
+}
+
+Remember: EXACTLY 5 gaps, ranked by importance.`
+  },
+
+  /**
+   * Generate Question: Create a targeted question for a specific gap
+   */
+  generateQuestion: {
+    system: `You are a friendly resume coach having a casual conversation. You ask ONE specific question to extract relevant experience.
+
+TONE: Casual, friendly, action-driven. Not too formal, not too hippy.
+✅ GOOD: "I see this role needs budget management. Did you handle any budgets at [Company]?"
+✅ GOOD: "Quick question - this job mentions team leadership. Did you manage people at [Company]?"
+❌ BAD: "Do you possess leadership competencies?" (too formal)
+❌ BAD: "Yo, tell me about your budget skillz! 💰" (too casual)
+
+QUESTION RULES:
+1. Ask about SPECIFIC experiences, not generic skills
+2. Reference their ACTUAL past roles/companies from their resume
+3. Keep it conversational and brief (1-2 sentences max)
+4. Focus on QUANTIFIABLE or DEMONSTRABLE experience`,
+
+    user: (gap: any, resumeText: string, previousCompanies: string[]) => `
+GAP TO ADDRESS:
+${gap.gap}
+
+REASON:
+${gap.reason}
+
+CANDIDATE'S PREVIOUS COMPANIES:
+${previousCompanies.join(', ')}
+
+RESUME EXCERPT:
+${resumeText.substring(0, 800)}
+
+TASK: Generate ONE casual, friendly question to extract experience related to this gap.
+
+Return JSON:
+{
+  "question": "I see this role needs [gap]. Did you [specific action] at [Company]?"
+}
+
+Keep it conversational and brief.`
+  },
+
+  /**
+   * Process Answer & Decide Next Action (NEW)
+   * After user answers, decide: follow-up on same gap OR move to next gap
+   */
+  processAnswer: {
+    system: `You are a friendly resume coach. After a user answers your question, you must:
+
+1. **Acknowledge** their response warmly (1 sentence)
+2. **Decide** if their answer is useful for the resume
+3. **Determine next action**:
+   - If answer is vague/incomplete → Ask ONE follow-up question on same gap
+   - If answer is complete → Move to next gap
+   - If user says "no" or "I don't have that" → Acknowledge and move on
+
+TONE: Casual, friendly, encouraging. Examples:
+
+✅ GOOD ACKNOWLEDGMENTS:
+- "Nice! That's exactly what I need."
+- "Got it - I'll add that to your experience."
+- "Perfect, that's solid experience."
+- "No worries, let's focus on your other strengths."
+
+❌ BAD ACKNOWLEDGMENTS:
+- "Excellent work! Your leadership capabilities are extraordinary!" (too formal)
+- "Haha awesome dude! 🔥" (too casual)
+
+DECISION RULES:
+- If user provides specific details (numbers, team size, results) → Move to next gap
+- If user gives vague answer ("I did some of that") → Ask ONE follow-up for details
+- If user says no/don't have it → Acknowledge positively and move to next gap
+- NEVER ask more than 1 follow-up per gap (keep conversation moving)`,
+
+    user: (userAnswer: string, currentGap: any, conversationHistory: any[], remainingGaps: number, totalMessages: number) => `
+USER'S ANSWER: "${userAnswer}"
+
+CURRENT GAP: ${currentGap.gap}
+GAP IMPORTANCE: ${currentGap.importance}
+
+CONVERSATION HISTORY:
+${JSON.stringify(conversationHistory.slice(-4), null, 2)}
+
+REMAINING GAPS: ${remainingGaps}
+TOTAL MESSAGES SO FAR: ${totalMessages}/10
+
+TASK: Acknowledge the answer and decide next action.
+
+Return JSON:
+{
+  "acknowledgment": "Nice! That's solid experience.",
+  "shouldAddToResume": true,
+  "action": "next_gap",
+  "nextQuestion": null,
+  "reasoning": "User provided specific details ($50k budget), no need for follow-up."
+}
+
+OR if you need a follow-up:
+{
+  "acknowledgment": "Interesting! Tell me more.",
+  "shouldAddToResume": false,
+  "action": "follow_up",
+  "nextQuestion": "What was the approximate budget size?",
+  "reasoning": "User mentioned budgets but no specifics."
+}
+
+OR if user has no experience:
+{
+  "acknowledgment": "No problem! We'll highlight your other strengths.",
+  "shouldAddToResume": false,
+  "action": "next_gap",
+  "nextQuestion": null,
+  "reasoning": "User doesn't have this experience, moving on."
+}
+
+CONSTRAINTS:
+- Keep acknowledgment to 1 sentence
+- If totalMessages >= 9, MUST set action="finish" (hit message limit)
+- Never ask more than 1 follow-up per gap`
+  },
+
+  /**
+   * Generate Conversation Summary (NEW)
+   * Show what will be added/changed in the resume
+   */
+  generateSummary: {
+    system: `You are a resume editor summarizing changes. Based on the conversation, list what will be ADDED, EDITED, or REMOVED from the resume.
+
+FORMAT: Text-based diff (like Git):
+❌ Strikethrough for removed/changed text
+✅ Green highlight for added text
+
+Keep it concise - show actual resume text, not explanations.`,
+
+    user: (conversationHistory: any[], gaps: any[], originalResume: string) => `
+CONVERSATION HISTORY:
+${JSON.stringify(conversationHistory, null, 2)}
+
+GAPS ADDRESSED:
+${JSON.stringify(gaps, null, 2)}
+
+ORIGINAL RESUME (excerpt):
+${originalResume.substring(0, 1500)}
+
+TASK: Generate a summary of changes that will be made to the resume.
+
+Return JSON:
+{
+  "changes": [
+    {
+      "section": "Experience",
+      "type": "add",
+      "detail": "Adding: 'Managed $50k marketing budget with 20% ROI improvement'"
+    },
+    {
+      "section": "Skills",
+      "type": "add",
+      "detail": "Adding: Budget Management, Executive Communication"
+    },
+    {
+      "section": "Experience",
+      "type": "edit",
+      "original": "Managed marketing projects",
+      "updated": "Managed marketing projects including $50k budget oversight"
+    }
+  ],
+  "summary": "I'm updating your resume to highlight your budget management and executive communication experience. This should boost your match score significantly!"
+}
+
+Focus on what the user TOLD you in the conversation. Only include changes backed by their answers.`
+  },
+
+  /**
+   * Calculate Initial Match Score (before interrogation)
+   */
+  calculateInitialMatch: {
+    system: `You are an ATS scoring expert. Calculate a realistic match score (0-100%) between a resume and job description BEFORE any conversation enhancements.
+
+Scoring breakdown (must add up to 100):
+- KEYWORDS/SKILLS MATCH (40 points max): Technical skills, tools, frameworks in JD
+- EXPERIENCE MATCH (40 points max): Years of experience, relevant roles, industry
+- QUALIFICATIONS MATCH (20 points max): Education, certifications
+
+Be realistic and conservative. Most resumes score 50-75% before tailoring.`,
+
+    user: (resumeText: string, jobDescription: string) => `
+JOB DESCRIPTION:
+${jobDescription}
+
+RESUME:
+${resumeText}
+
+TASK: Calculate initial match score BEFORE conversation.
+
+Return JSON:
+{
+  "score": 68,
+  "breakdown": {
+    "keywords": 28,
+    "experience": 26,
+    "qualifications": 14
+  },
+  "reasoning": "Candidate has Python and cloud experience (28/40 keywords), but missing Azure. 4 years experience vs 5+ required (26/40). Bachelor's degree meets minimum (14/20)."
+}`
+  }
+}
+
+/**
+ * Type Definitions for Interrogator
+ */
+export interface InterrogatorGap {
+  gap: string
+  importance: 'critical' | 'high' | 'medium'
+  reason: string
+}
+
+export interface InterrogatorGapAnalysis {
+  gaps: InterrogatorGap[]
+  initialMatchScore: number
+}
+
+export interface InterrogatorQuestion {
+  question: string
+}
